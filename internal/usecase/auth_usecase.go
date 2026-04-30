@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"mynofuapi/internal/domain"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type authUseCase struct {
@@ -27,10 +30,25 @@ func (a *authUseCase) Authenticate(ctx context.Context, req domain.AuthRequest) 
 		return domain.AuthResponse{}, errors.New("invalid credentials")
 	}
 
-	// Mock token generation
+	// JWT Token generation
+	expiresIn := 3600
+	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
+
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": expirationTime.Unix(),
+		"iat": time.Now().Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte("secret")) // In production, use env variable
+	if err != nil {
+		return domain.AuthResponse{}, errors.New("failed to generate token")
+	}
+
 	return domain.AuthResponse{
-		AccessToken: "mock-jwt-token",
+		AccessToken: tokenString,
 		TokenType:   "Bearer",
-		ExpiresIn:   3600,
+		ExpiresIn:   expiresIn,
 	}, nil
 }
