@@ -25,6 +25,7 @@ func main() {
 	// Routes
 	r.Route("/public", func(r chi.Router) {
 		r.Post("/auth", authHandler.Login)
+		r.Get("/introspect", authHandler.Introspect)
 	})
 
 	// Start Server
