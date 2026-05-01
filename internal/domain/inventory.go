@@ -25,9 +25,8 @@ type RiderInventory struct {
 }
 
 type RiderInventoryResponse struct {
-	Status      string           `json:"status"`
-	Data        []RiderInventory `json:"data"`
-	AccessToken *string          `json:"access_token"`
+	Status string           `json:"status"`
+	Data   []RiderInventory `json:"data"`
 }
 
 type InventoryRepository interface {

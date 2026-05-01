@@ -21,7 +21,7 @@ func NewInventoryHandler(repo domain.InventoryRepository) *InventoryHandler {
 
 func (h *InventoryHandler) GetRiderInventories(w http.ResponseWriter, r *http.Request) {
 	category := chi.URLParam(r, "category")
-	
+
 	// Get UserID and Token from context (stored by AuthMiddleware)
 	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)
 	if !ok || claims.UserID == "" {
@@ -41,15 +41,9 @@ func (h *InventoryHandler) GetRiderInventories(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var accessToken *string
-	if claims.AccessToken != nil {
-		accessToken = claims.AccessToken
-	}
-
 	response := domain.RiderInventoryResponse{
-		Status:      "success",
-		Data:        inventories,
-		AccessToken: accessToken,
+		Status: "success",
+		Data:   inventories,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
