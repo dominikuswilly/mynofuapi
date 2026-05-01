@@ -4,12 +4,50 @@ import (
 	"encoding/json"
 	"mynofuapi/internal/domain"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
-type InventoryHandler struct{}
+type InventoryHandler struct {
+	repo domain.InventoryRepository
+}
 
-func NewInventoryHandler() *InventoryHandler {
-	return &InventoryHandler{}
+func NewInventoryHandler(repo domain.InventoryRepository) *InventoryHandler {
+	return &InventoryHandler{
+		repo: repo,
+	}
+}
+
+func (h *InventoryHandler) GetRiderInventories(w http.ResponseWriter, r *http.Request) {
+	category := chi.URLParam(r, "category")
+	
+	// Get UserID from context (stored by AuthMiddleware)
+	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "Unauthorized: missing user info", http.StatusUnauthorized)
+		return
+	}
+
+	riderID, err := strconv.Atoi(claims.UserID)
+	if err != nil {
+		http.Error(w, "Invalid user ID format", http.StatusInternalServerError)
+		return
+	}
+
+	inventories, err := h.repo.GetRiderInventory(r.Context(), riderID, category)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := domain.RiderInventoryResponse{
+		Status: "success",
+		Data:   inventories,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *InventoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {

@@ -44,7 +44,14 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 
 	// If access token is valid, return it back (or wrap in response)
 	if err == nil && token.Valid {
+		claims, ok := token.Claims.(jwt.MapClaims)
+		userID := ""
+		if ok {
+			userID, _ = claims["sub"].(string)
+		}
+
 		return domain.AuthResponse{
+			UserID:      userID,
 			AccessToken: accessToken,
 			TokenType:   "Bearer",
 			ExpiresIn:   3600, // Ideally we calculate remaining time
@@ -124,6 +131,7 @@ func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, err
 	}
 
 	return domain.AuthResponse{
+		UserID:           user.ID,
 		AccessToken:      accessToken,
 		RefreshToken:     refreshToken,
 		TokenType:        "Bearer",

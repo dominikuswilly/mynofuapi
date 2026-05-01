@@ -2,12 +2,17 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log"
 	"mynofuapi/internal/domain"
 	"net/http"
 	"strings"
 )
+
+type contextKey string
+
+const ClaimsKey contextKey = "claims"
 
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,14 +95,16 @@ func AuthMiddleware(authUseCase domain.AuthUseCase) func(http.Handler) http.Hand
 				refreshToken = r.URL.Query().Get("refresh_token")
 			}
 
-			// We use Introspect logic to validate
-			_, err := authUseCase.Introspect(r.Context(), accessToken, refreshToken)
+			// We use Introspect logic to validate and get claims
+			res, err := authUseCase.Introspect(r.Context(), accessToken, refreshToken)
 			if err != nil {
-				http.Error(w, "Unauthorized: " + err.Error(), http.StatusUnauthorized)
+				http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
 				return
 			}
 
-			next.ServeHTTP(w, r)
+			// Store claims in context
+			ctx := context.WithValue(r.Context(), ClaimsKey, res)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
