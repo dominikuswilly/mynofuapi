@@ -1,0 +1,10 @@
+services:
+  mynofuapi-services:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: app.netbird.cloud:8081/mynofuapi/stable:1.0.0
+    platform: linux/amd64
+    ports:
+      - "8101:8080"
+    restart: unless-stopped

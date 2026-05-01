@@ -8,13 +8,16 @@ type AuthRequest struct {
 }
 
 type AuthResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"`
+	AccessToken      string `json:"access_token"`
+	RefreshToken     string `json:"refresh_token"`
+	TokenType        string `json:"token_type"`
+	ExpiresIn        int    `json:"expires_in"`
+	RefreshExpiresIn int    `json:"refresh_expires_in"`
 }
 
 type AuthUseCase interface {
 	Authenticate(ctx context.Context, req AuthRequest) (AuthResponse, error)
+	Introspect(ctx context.Context, accessToken, refreshToken string) (AuthResponse, error)
 }
 
 type UserRepository interface {
