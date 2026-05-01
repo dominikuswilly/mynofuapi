@@ -31,6 +31,7 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	authUC := usecase.NewAuthUseCase(userRepo)
 	authHandler := delivery.NewAuthHandler(authUC)
+	inventoryHandler := delivery.NewInventoryHandler()
 
 	// Router setup
 	r := chi.NewRouter()
@@ -40,7 +41,16 @@ func main() {
 	// Routes
 	r.Route("/public", func(r chi.Router) {
 		r.Post("/auth", authHandler.Login)
+	})
+
+	r.Route("/private", func(r chi.Router) {
+		r.Use(delivery.AuthMiddleware(authUC))
+
 		r.Get("/introspect", authHandler.Introspect)
+
+		r.Route("/inventory", func(r chi.Router) {
+			r.Get("/categories", inventoryHandler.GetCategories)
+		})
 	})
 
 	// Start Server
