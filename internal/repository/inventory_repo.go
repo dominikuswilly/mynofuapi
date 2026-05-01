@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"mynofuapi/internal/domain"
 )
@@ -19,7 +20,7 @@ func NewInventoryRepository(db *sql.DB) domain.InventoryRepository {
 
 func (r *inventoryRepo) GetRiderInventory(ctx context.Context, riderID int, category string) ([]domain.RiderInventory, error) {
 	query := `
-		SELECT c_product_id, c_product_nm, i_qty_base, i_qty_current
+		SELECT c_product_id, c_product_nm, i_qty_base, i_qty_current, i_amt_sell
 		FROM rider_inventory
 		WHERE i_rider_id = $1 AND LOWER(c_category) = LOWER($2)
 	`
@@ -35,19 +36,20 @@ func (r *inventoryRepo) GetRiderInventory(ctx context.Context, riderID int, cate
 	var inventories []domain.RiderInventory
 	for rows.Next() {
 		var inv domain.RiderInventory
-		// amount_sell is not in the table, setting a placeholder or 0
-		inv.AmountSell = "0" 
 		
+		var amt float64
 		err := rows.Scan(
 			&inv.ProductID,
 			&inv.ProductName,
 			&inv.QtyBase,
 			&inv.QtyCurrent,
+			&amt,
 		)
 		if err != nil {
 			log.Printf("Error scanning inventory row: %v", err)
 			continue
 		}
+		inv.AmountSell = fmt.Sprintf("%.0f", amt)
 		inventories = append(inventories, inv)
 	}
 
