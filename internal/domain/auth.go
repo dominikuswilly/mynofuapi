@@ -8,12 +8,12 @@ type AuthRequest struct {
 }
 
 type AuthResponse struct {
-	UserID           string `json:"user_id"`
-	AccessToken      string `json:"access_token"`
-	RefreshToken     string `json:"refresh_token"`
-	TokenType        string `json:"token_type"`
-	ExpiresIn        int    `json:"expires_in"`
-	RefreshExpiresIn int    `json:"refresh_expires_in"`
+	UserID           string  `json:"user_id"`
+	AccessToken      *string `json:"access_token"`
+	RefreshToken     *string `json:"refresh_token"`
+	TokenType        string  `json:"token_type"`
+	ExpiresIn        int     `json:"expires_in"`
+	RefreshExpiresIn int     `json:"refresh_expires_in"`
 }
 
 type AuthUseCase interface {

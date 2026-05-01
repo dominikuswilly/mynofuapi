@@ -11,8 +11,9 @@ type Category struct {
 }
 
 type CategoryResponse struct {
-	Status string     `json:"status"`
-	Data   []Category `json:"data"`
+	Status      string     `json:"status"`
+	Data        []Category `json:"data"`
+	AccessToken *string    `json:"access_token"`
 }
 
 type RiderInventory struct {
@@ -24,8 +25,9 @@ type RiderInventory struct {
 }
 
 type RiderInventoryResponse struct {
-	Status string           `json:"status"`
-	Data   []RiderInventory `json:"data"`
+	Status      string           `json:"status"`
+	Data        []RiderInventory `json:"data"`
+	AccessToken *string          `json:"access_token"`
 }
 
 type InventoryRepository interface {

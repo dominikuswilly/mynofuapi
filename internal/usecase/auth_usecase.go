@@ -42,7 +42,7 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 		return []byte("secret"), nil
 	})
 
-	// If access token is valid, return it back (or wrap in response)
+	// If access token is valid, return nil for AccessToken (meaning no refresh happened)
 	if err == nil && token.Valid {
 		claims, ok := token.Claims.(jwt.MapClaims)
 		userID := ""
@@ -52,9 +52,9 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 
 		return domain.AuthResponse{
 			UserID:      userID,
-			AccessToken: accessToken,
+			AccessToken: nil, 
 			TokenType:   "Bearer",
-			ExpiresIn:   3600, // Ideally we calculate remaining time
+			ExpiresIn:   3600,
 		}, nil
 	}
 
@@ -132,8 +132,8 @@ func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, err
 
 	return domain.AuthResponse{
 		UserID:           user.ID,
-		AccessToken:      accessToken,
-		RefreshToken:     refreshToken,
+		AccessToken:      &accessToken,
+		RefreshToken:     &refreshToken,
 		TokenType:        "Bearer",
 		ExpiresIn:        expiresIn,
 		RefreshExpiresIn: refreshExpiresIn,
