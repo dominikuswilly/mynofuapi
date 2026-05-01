@@ -22,7 +22,10 @@ func NewAuthUseCase(userRepo domain.UserRepository) domain.AuthUseCase {
 func (a *authUseCase) Authenticate(ctx context.Context, req domain.AuthRequest) (domain.AuthResponse, error) {
 	user, err := a.userRepo.FindByUsername(ctx, req.Username)
 	if err != nil {
-		return domain.AuthResponse{}, errors.New("invalid credentials")
+		if err.Error() == "user not found" {
+			return domain.AuthResponse{}, errors.New("invalid credentials")
+		}
+		return domain.AuthResponse{}, err
 	}
 
 	// Simple password check (In a real app, use bcrypt)
@@ -30,7 +33,7 @@ func (a *authUseCase) Authenticate(ctx context.Context, req domain.AuthRequest) 
 		return domain.AuthResponse{}, errors.New("invalid credentials")
 	}
 
-	return a.generateTokens(user.ID)
+	return a.generateTokens(user)
 }
 
 func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken string) (domain.AuthResponse, error) {
@@ -71,20 +74,29 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 		return domain.AuthResponse{}, errors.New("unauthorized: invalid claims")
 	}
 
+	// Fetch user to get up-to-date claims
+	user, err := a.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return domain.AuthResponse{}, errors.New("unauthorized: user no longer exists or is inactive")
+	}
+
 	// Generate new tokens
-	return a.generateTokens(userID)
+	return a.generateTokens(user)
 }
 
-func (a *authUseCase) generateTokens(userID string) (domain.AuthResponse, error) {
+func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, error) {
 	// Access Token generation
 	expiresIn := 3600
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 
 	claims := jwt.MapClaims{
-		"sub":  userID,
-		"exp":  expirationTime.Unix(),
-		"iat":  time.Now().Unix(),
-		"type": "access",
+		"sub":      user.ID,
+		"id":       user.ID,
+		"username": user.Username,
+		"name":     user.Name,
+		"exp":      expirationTime.Unix(),
+		"iat":      time.Now().Unix(),
+		"type":     "access",
 	}
 
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("secret"))
@@ -97,10 +109,13 @@ func (a *authUseCase) generateTokens(userID string) (domain.AuthResponse, error)
 	refreshExpirationTime := time.Now().Add(time.Duration(refreshExpiresIn) * time.Second)
 
 	refreshClaims := jwt.MapClaims{
-		"sub":  userID,
-		"exp":  refreshExpirationTime.Unix(),
-		"iat":  time.Now().Unix(),
-		"type": "refresh",
+		"sub":      user.ID,
+		"id":       user.ID,
+		"username": user.Username,
+		"name":     user.Name,
+		"exp":      refreshExpirationTime.Unix(),
+		"iat":      time.Now().Unix(),
+		"type":     "refresh",
 	}
 
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte("secret"))

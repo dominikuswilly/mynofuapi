@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Database connection string
-	connStr := "host=db.netbird.cloud port=5432 user=mynofu password=nofu2025 dbname=mynofudb sslmode=disable"
+	connStr := "host=db.netbird.cloud port=5440 user=mynofu password=nofu2025 dbname=mynofudb sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
