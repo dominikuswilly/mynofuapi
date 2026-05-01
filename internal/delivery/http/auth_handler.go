@@ -44,6 +44,14 @@ func (h *AuthHandler) Introspect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if already authenticated by middleware
+	if res, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse); ok {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	// Fallback for manual hit if middleware is skipped (should not happen in current routes)
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		http.Error(w, "Unauthorized: missing access token", http.StatusUnauthorized)

@@ -52,7 +52,7 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 
 		return domain.AuthResponse{
 			UserID:      userID,
-			AccessToken: nil, 
+			AccessToken: nil,
 			TokenType:   "Bearer",
 			ExpiresIn:   3600,
 		}, nil
@@ -93,7 +93,7 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 
 func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, error) {
 	// Access Token generation
-	expiresIn := 3600
+	expiresIn := 10
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 
 	claims := jwt.MapClaims{
