@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	delivery "mynofuapi/internal/delivery/http"
 	"mynofuapi/internal/repository"
@@ -9,11 +10,25 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/lib/pq"
 )
 
 func main() {
+	// Database connection string
+	connStr := "host=db.netbird.cloud port=5432 user=mynofu password=nofu2025 dbname=mynofudb sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Check connection
+	if err := db.Ping(); err != nil {
+		log.Fatal("Could not connect to database:", err)
+	}
+
 	// Initialize Dependencies
-	userRepo := repository.NewMockUserRepository()
+	userRepo := repository.NewUserRepository(db)
 	authUC := usecase.NewAuthUseCase(userRepo)
 	authHandler := delivery.NewAuthHandler(authUC)
 

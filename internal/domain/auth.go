@@ -25,4 +25,6 @@ type User struct {
 	ID       string
 	Username string
 	Password string // Hashed
+	Name     string
+	IsActive int
 }

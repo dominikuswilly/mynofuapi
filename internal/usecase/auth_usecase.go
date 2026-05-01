@@ -27,6 +27,10 @@ func (a *authUseCase) Authenticate(ctx context.Context, req domain.AuthRequest) 
 		return domain.AuthResponse{}, errors.New("invalid credentials")
 	}
 
+	if user.IsActive != 1 {
+		return domain.AuthResponse{}, errors.New("user is inactive")
+	}
+
 	// Mock token generation
 	return domain.AuthResponse{
 		AccessToken: "mock-jwt-token",
