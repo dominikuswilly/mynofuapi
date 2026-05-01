@@ -30,9 +30,11 @@ func main() {
 	// Initialize Dependencies
 	userRepo := repository.NewUserRepository(db)
 	inventoryRepo := repository.NewInventoryRepository(db)
+	transactionRepo := repository.NewTransactionRepository(db)
 	authUC := usecase.NewAuthUseCase(userRepo)
 	authHandler := delivery.NewAuthHandler(authUC)
 	inventoryHandler := delivery.NewInventoryHandler(inventoryRepo)
+	transactionHandler := delivery.NewTransactionHandler(transactionRepo)
 
 	// Router setup
 	r := chi.NewRouter()
@@ -55,6 +57,10 @@ func main() {
 		})
 
 		r.Get("/inventories/{category}", inventoryHandler.GetRiderInventories)
+
+		r.Route("/transaction", func(r chi.Router) {
+			r.Post("/sales", transactionHandler.CreateSale)
+		})
 	})
 
 	// Start Server

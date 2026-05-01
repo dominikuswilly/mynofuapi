@@ -9,6 +9,7 @@ type AuthRequest struct {
 
 type AuthResponse struct {
 	UserID           string  `json:"user_id"`
+	Name             string  `json:"name"`
 	AccessToken      *string `json:"access_token"`
 	RefreshToken     *string `json:"refresh_token"`
 	TokenType        string  `json:"token_type"`
