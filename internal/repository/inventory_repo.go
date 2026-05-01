@@ -23,6 +23,7 @@ func (r *inventoryRepo) GetRiderInventory(ctx context.Context, riderID int, cate
 		SELECT c_product_id, c_product_nm, i_qty_base, i_qty_current, i_amt_sell
 		FROM rider_inventory
 		WHERE i_rider_id = $1 AND LOWER(c_category) = LOWER($2)
+		ORDER BY c_product_nm
 	`
 	log.Printf("Executing query: %s with params: [%d, %s]", query, riderID, category)
 
