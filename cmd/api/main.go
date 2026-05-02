@@ -28,11 +28,17 @@ func main() {
 	}
 
 	// Initialize Dependencies
-	userRepo := repository.NewUserRepository(db)
+	riderRepo := repository.NewUserRepository(db, "rider_master")
+	adminRepo := repository.NewUserRepository(db, "admin_master")
 	inventoryRepo := repository.NewInventoryRepository(db)
 	transactionRepo := repository.NewTransactionRepository(db)
-	authUC := usecase.NewAuthUseCase(userRepo)
+
+	authUC := usecase.NewAuthUseCase(riderRepo)
+	adminAuthUC := usecase.NewAuthUseCase(adminRepo)
+
 	authHandler := delivery.NewAuthHandler(authUC)
+	adminAuthHandler := delivery.NewAuthHandler(adminAuthUC)
+
 	inventoryHandler := delivery.NewInventoryHandler(inventoryRepo)
 	transactionHandler := delivery.NewTransactionHandler(transactionRepo)
 
@@ -45,12 +51,14 @@ func main() {
 	// Routes
 	r.Route("/public", func(r chi.Router) {
 		r.Post("/auth", authHandler.Login)
+		r.Post("/admin/auth", adminAuthHandler.Login)
 	})
 
 	r.Route("/private", func(r chi.Router) {
 		r.Use(delivery.AuthMiddleware(authUC))
 
 		r.Get("/introspect", authHandler.Introspect)
+		r.Get("/admin/introspect", adminAuthHandler.Introspect)
 
 		r.Route("/inventory", func(r chi.Router) {
 			r.Get("/categories", inventoryHandler.GetCategories)
