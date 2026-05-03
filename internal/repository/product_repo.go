@@ -23,13 +23,14 @@ func (r *productRepo) GetAllProducts(ctx context.Context, category string) ([]do
 	query := `
 		SELECT c_id, c_nm, c_category, i_amt_sell, i_active
 		FROM product_master
+		WHERE i_active = 1
 	`
 	
 	var rows *sql.Rows
 	var err error
 
 	if category != "" {
-		query += " WHERE LOWER(c_category) = LOWER($1)"
+		query += " AND LOWER(c_category) = LOWER($1)"
 		query += " ORDER BY c_id"
 		rows, err = r.db.QueryContext(ctx, query, category)
 	} else {
@@ -102,5 +103,11 @@ func (r *productRepo) UpdateProduct(ctx context.Context, id string, req domain.P
 	log.Printf("Executing update: %s with args: %v", query, args)
 
 	_, err := r.db.ExecContext(ctx, query, args...)
+	return err
+}
+
+func (r *productRepo) DeleteProduct(ctx context.Context, id string) error {
+	query := "UPDATE product_master SET i_active = 0 WHERE c_id = $1"
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }

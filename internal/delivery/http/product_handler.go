@@ -82,3 +82,31 @@ func (h *ProductHandler) PatchProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// DeleteProduct godoc
+// @Summary      Delete a product
+// @Description  Soft delete a product by setting i_active to 0
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id   path      string  true  "Product ID"
+// @Success      200  {object}  map[string]string "{"status": "success"}"
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/product/{id} [delete]
+func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	err := h.repo.DeleteProduct(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status": "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

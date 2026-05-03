@@ -234,6 +234,34 @@ paths:
       tags:
       - products
   /private/product/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft delete a product by setting i_active to 0
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Delete a product
+      tags:
+      - products
     patch:
       consumes:
       - application/json

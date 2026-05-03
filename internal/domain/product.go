@@ -23,4 +23,5 @@ type PatchProductRequest struct {
 type ProductRepository interface {
 	GetAllProducts(ctx context.Context, category string) ([]Product, error)
 	UpdateProduct(ctx context.Context, id string, req PatchProductRequest) error
+	DeleteProduct(ctx context.Context, id string) error
 }

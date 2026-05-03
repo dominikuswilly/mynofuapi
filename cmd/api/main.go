@@ -84,6 +84,7 @@ func main() {
 		r.Get("/admin/introspect", adminAuthHandler.Introspect)
 		r.Get("/product", productHandler.GetProducts)
 		r.Patch("/product/{id}", productHandler.PatchProduct)
+		r.Delete("/product/{id}", productHandler.DeleteProduct)
 
 		r.Route("/inventory", func(r chi.Router) {
 			r.Get("/categories", inventoryHandler.GetCategories)
