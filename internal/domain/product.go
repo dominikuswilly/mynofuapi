@@ -18,6 +18,7 @@ type ProductResponse struct {
 type PatchProductRequest struct {
 	Name       *string `json:"name"`
 	AmountSell *int    `json:"amount_sell"`
+	Active     *int    `json:"active"`
 }
 
 type ProductRepository interface {

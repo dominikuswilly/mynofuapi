@@ -92,6 +92,12 @@ func (r *productRepo) UpdateProduct(ctx context.Context, id string, req domain.P
 		argIdx++
 	}
 
+	if req.Active != nil {
+		updates = append(updates, fmt.Sprintf("i_active = $%d", argIdx))
+		args = append(args, *req.Active)
+		argIdx++
+	}
+
 	if len(updates) == 0 {
 		return nil // Nothing to update
 	}

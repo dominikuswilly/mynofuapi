@@ -53,6 +53,8 @@ definitions:
     type: object
   domain.PatchProductRequest:
     properties:
+      active:
+        type: integer
       amount_sell:
         type: integer
       name:

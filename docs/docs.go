@@ -606,6 +606,9 @@ const docTemplate = `{
         "domain.PatchProductRequest": {
             "type": "object",
             "properties": {
+                "active": {
+                    "type": "integer"
+                },
                 "amount_sell": {
                     "type": "integer"
                 },
