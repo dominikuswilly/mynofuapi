@@ -32,6 +32,7 @@ func main() {
 	adminRepo := repository.NewUserRepository(db, "admin_master")
 	inventoryRepo := repository.NewInventoryRepository(db)
 	transactionRepo := repository.NewTransactionRepository(db)
+	productRepo := repository.NewProductRepository(db)
 
 	authUC := usecase.NewAuthUseCase(riderRepo)
 	adminAuthUC := usecase.NewAuthUseCase(adminRepo)
@@ -41,6 +42,7 @@ func main() {
 
 	inventoryHandler := delivery.NewInventoryHandler(inventoryRepo)
 	transactionHandler := delivery.NewTransactionHandler(transactionRepo)
+	productHandler := delivery.NewProductHandler(productRepo)
 
 	// Router setup
 	r := chi.NewRouter()
@@ -59,6 +61,7 @@ func main() {
 
 		r.Get("/introspect", authHandler.Introspect)
 		r.Get("/admin/introspect", adminAuthHandler.Introspect)
+		r.Get("/product", productHandler.GetProducts)
 
 		r.Route("/inventory", func(r chi.Router) {
 			r.Get("/categories", inventoryHandler.GetCategories)
