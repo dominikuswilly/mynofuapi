@@ -17,6 +17,18 @@ func NewTransactionHandler(repo domain.TransactionRepository) *TransactionHandle
 	}
 }
 
+// CreateSale godoc
+// @Summary      Create a sale
+// @Description  Create a new sale transaction for the authenticated rider
+// @Tags         transaction
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        request  body      domain.SaleRequest  true  "Sale request"
+// @Success      200      {object}  map[string]string "{"status": "success"}"
+// @Failure      401      {string}  string "Unauthorized"
+// @Failure      500      {string}  string "Error message"
+// @Router       /private/transaction/sales [post]
 func (h *TransactionHandler) CreateSale(w http.ResponseWriter, r *http.Request) {
 	// Get UserID from context
 	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)

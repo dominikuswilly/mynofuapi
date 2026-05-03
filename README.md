@@ -36,6 +36,20 @@ A robust backend service for MyNofu, built with Go and adhering to Clean Archite
 
 The server will be available at `http://localhost:8080`.
 
+## API Documentation (Swagger)
+
+The API includes interactive documentation via Swagger UI.
+
+### Access
+Once the server is running, you can access the documentation at:
+[http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html)
+
+### Regenerating Documentation
+To update the documentation after changing annotations or API structure, run:
+```bash
+go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/api/main.go
+```
+
 ## Testing the API
 
 You can test the authentication endpoint using `curl`:

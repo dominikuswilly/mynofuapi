@@ -96,7 +96,7 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 
 func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, error) {
 	// Access Token generation
-	expiresIn := 10 // Short for testing/demo as seen in user diff
+	expiresIn := 3600 // Short for testing/demo as seen in user diff
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 
 	claims := jwt.MapClaims{

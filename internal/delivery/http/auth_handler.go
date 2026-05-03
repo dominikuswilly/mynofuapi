@@ -16,6 +16,16 @@ func NewAuthHandler(authUseCase domain.AuthUseCase) *AuthHandler {
 	}
 }
 
+// Login godoc
+// @Summary      Login
+// @Description  Authenticate user and return access token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.AuthRequest  true  "Login request"
+// @Success      200      {object}  domain.AuthResponse
+// @Failure      401      {string}  string "Unauthorized"
+// @Router       /public/auth [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -38,6 +48,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+// Introspect godoc
+// @Summary      Introspect token
+// @Description  Check token validity and return user info
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Success      200      {object}  domain.AuthResponse
+// @Failure      401      {string}  string "Unauthorized"
+// @Router       /private/introspect [get]
 func (h *AuthHandler) Introspect(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

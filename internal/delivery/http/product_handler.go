@@ -16,6 +16,16 @@ func NewProductHandler(repo domain.ProductRepository) *ProductHandler {
 	}
 }
 
+// GetProducts godoc
+// @Summary      Get all products
+// @Description  Retrieve a list of all products from the product_master table
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Success      200  {object}  domain.ProductResponse
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/product [get]
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	products, err := h.repo.GetAllProducts(r.Context())
 	if err != nil {

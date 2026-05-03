@@ -11,7 +11,28 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/lib/pq"
+	_ "mynofuapi/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+// @title           MyNofu API
+// @version         1.0
+// @description     API for MyNofu application.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
 
 func main() {
 	// Database connection string
@@ -73,6 +94,8 @@ func main() {
 			r.Post("/sales", transactionHandler.CreateSale)
 		})
 	})
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	// Start Server
 	log.Println("Starting server on :8080...")

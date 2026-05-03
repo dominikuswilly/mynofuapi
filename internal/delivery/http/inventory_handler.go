@@ -19,6 +19,18 @@ func NewInventoryHandler(repo domain.InventoryRepository) *InventoryHandler {
 	}
 }
 
+// GetRiderInventories godoc
+// @Summary      Get rider inventories
+// @Description  Retrieve a list of inventories for the authenticated rider by category
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        category  path      string  true  "Category"
+// @Success      200       {object}  domain.RiderInventoryResponse
+// @Failure      401       {string}  string "Unauthorized"
+// @Failure      500       {string}  string "Database error"
+// @Router       /private/inventories/{category} [get]
 func (h *InventoryHandler) GetRiderInventories(w http.ResponseWriter, r *http.Request) {
 	category := chi.URLParam(r, "category")
 
@@ -50,6 +62,15 @@ func (h *InventoryHandler) GetRiderInventories(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(response)
 }
 
+// GetCategories godoc
+// @Summary      Get inventory categories
+// @Description  Retrieve a list of all inventory categories
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Success      200       {object}  domain.CategoryResponse
+// @Router       /private/inventory/categories [get]
 func (h *InventoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
 	// Get Token from context
 	claims, _ := r.Context().Value(ClaimsKey).(domain.AuthResponse)
