@@ -19,24 +19,26 @@ func NewProductRepository(db *sql.DB) domain.ProductRepository {
 	}
 }
 
-func (r *productRepo) GetAllProducts(ctx context.Context, category string) ([]domain.Product, error) {
+func (r *productRepo) GetAllProducts(ctx context.Context, category string, includeInactive bool) ([]domain.Product, error) {
 	query := `
 		SELECT c_id, c_nm, c_category, i_amt_sell, i_active
 		FROM product_master
-		WHERE i_active = 1
+		WHERE 1=1
 	`
-	
-	var rows *sql.Rows
-	var err error
+	var args []interface{}
+
+	if !includeInactive {
+		query += " AND i_active = 1"
+	}
 
 	if category != "" {
-		query += " AND LOWER(c_category) = LOWER($1)"
-		query += " ORDER BY c_id"
-		rows, err = r.db.QueryContext(ctx, query, category)
-	} else {
-		query += " ORDER BY c_id"
-		rows, err = r.db.QueryContext(ctx, query)
+		query += fmt.Sprintf(" AND LOWER(c_category) = LOWER($%d)", len(args)+1)
+		args = append(args, category)
 	}
+
+	query += " ORDER BY c_id"
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		log.Printf("Error querying products: %v", err)
 		return nil, err

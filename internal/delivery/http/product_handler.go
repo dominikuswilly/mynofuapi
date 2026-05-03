@@ -32,7 +32,7 @@ func NewProductHandler(repo domain.ProductRepository) *ProductHandler {
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 
-	products, err := h.repo.GetAllProducts(r.Context(), category)
+	products, err := h.repo.GetAllProducts(r.Context(), category, false)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -123,7 +123,21 @@ func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 // @Failure      500  {string}  string "Database error"
 // @Router       /private/admin/product [get]
 func (h *ProductHandler) GetAdminProducts(w http.ResponseWriter, r *http.Request) {
-	h.GetProducts(w, r)
+	category := r.URL.Query().Get("category")
+
+	products, err := h.repo.GetAllProducts(r.Context(), category, true) // Skip i_active filter
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := domain.ProductResponse{
+		Status: "success",
+		Data:   products,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // PatchAdminProduct godoc
