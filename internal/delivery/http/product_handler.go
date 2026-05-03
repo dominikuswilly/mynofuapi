@@ -110,3 +110,50 @@ func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+// GetAdminProducts godoc
+// @Summary      Get all products (Admin)
+// @Description  Retrieve a list of all products (Admin)
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        category  query     string  false  "Category"
+// @Success      200  {object}  domain.ProductResponse
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/admin/product [get]
+func (h *ProductHandler) GetAdminProducts(w http.ResponseWriter, r *http.Request) {
+	h.GetProducts(w, r)
+}
+
+// PatchAdminProduct godoc
+// @Summary      Update a product (Admin)
+// @Description  Update product name and/or amount_sell (Admin)
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id       path      string                      true  "Product ID"
+// @Param        request  body      domain.PatchProductRequest  true  "Update request"
+// @Success      200      {object}  map[string]string "{"status": "success"}"
+// @Failure      400      {string}  string "Invalid request body"
+// @Failure      500      {string}  string "Database error"
+// @Router       /private/admin/product/{id} [patch]
+func (h *ProductHandler) PatchAdminProduct(w http.ResponseWriter, r *http.Request) {
+	h.PatchProduct(w, r)
+}
+
+// DeleteAdminProduct godoc
+// @Summary      Delete a product (Admin)
+// @Description  Soft delete a product by setting i_active to 0 (Admin)
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id   path      string  true  "Product ID"
+// @Success      200  {object}  map[string]string "{"status": "success"}"
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/admin/product/{id} [delete]
+func (h *ProductHandler) DeleteAdminProduct(w http.ResponseWriter, r *http.Request) {
+	h.DeleteProduct(w, r)
+}

@@ -8,10 +8,11 @@ import (
 	"mynofuapi/internal/usecase"
 	"net/http"
 
+	_ "mynofuapi/docs"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/lib/pq"
-	_ "mynofuapi/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -78,22 +79,32 @@ func main() {
 	})
 
 	r.Route("/private", func(r chi.Router) {
-		r.Use(delivery.AuthMiddleware(authUC))
+		// Rider Routes
+		r.Group(func(r chi.Router) {
+			r.Use(delivery.AuthMiddleware(authUC))
+			r.Get("/introspect", authHandler.Introspect)
+			r.Get("/product", productHandler.GetProducts)
+			r.Patch("/product/{id}", productHandler.PatchProduct)
+			r.Delete("/product/{id}", productHandler.DeleteProduct)
 
-		r.Get("/introspect", authHandler.Introspect)
-		r.Get("/admin/introspect", adminAuthHandler.Introspect)
-		r.Get("/product", productHandler.GetProducts)
-		r.Patch("/product/{id}", productHandler.PatchProduct)
-		r.Delete("/product/{id}", productHandler.DeleteProduct)
+			r.Route("/inventory", func(r chi.Router) {
+				r.Get("/categories", inventoryHandler.GetCategories)
+			})
 
-		r.Route("/inventory", func(r chi.Router) {
-			r.Get("/categories", inventoryHandler.GetCategories)
+			r.Get("/inventories/{category}", inventoryHandler.GetRiderInventories)
+
+			r.Route("/transaction", func(r chi.Router) {
+				r.Post("/sales", transactionHandler.CreateSale)
+			})
 		})
 
-		r.Get("/inventories/{category}", inventoryHandler.GetRiderInventories)
-
-		r.Route("/transaction", func(r chi.Router) {
-			r.Post("/sales", transactionHandler.CreateSale)
+		// Admin Routes
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(delivery.AuthMiddleware(adminAuthUC))
+			r.Get("/introspect", adminAuthHandler.Introspect)
+			r.Get("/product", productHandler.GetAdminProducts)
+			r.Patch("/product/{id}", productHandler.PatchAdminProduct)
+			r.Delete("/product/{id}", productHandler.DeleteAdminProduct)
 		})
 	})
 
