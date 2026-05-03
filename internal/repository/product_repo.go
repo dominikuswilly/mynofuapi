@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"mynofuapi/internal/domain"
+	"strings"
 )
 
 type productRepo struct {
@@ -17,14 +19,23 @@ func NewProductRepository(db *sql.DB) domain.ProductRepository {
 	}
 }
 
-func (r *productRepo) GetAllProducts(ctx context.Context) ([]domain.Product, error) {
+func (r *productRepo) GetAllProducts(ctx context.Context, category string) ([]domain.Product, error) {
 	query := `
 		SELECT c_id, c_nm, c_category, i_amt_sell, i_active
 		FROM product_master
-		ORDER BY c_id
 	`
+	
+	var rows *sql.Rows
+	var err error
 
-	rows, err := r.db.QueryContext(ctx, query)
+	if category != "" {
+		query += " WHERE LOWER(c_category) = LOWER($1)"
+		query += " ORDER BY c_id"
+		rows, err = r.db.QueryContext(ctx, query, category)
+	} else {
+		query += " ORDER BY c_id"
+		rows, err = r.db.QueryContext(ctx, query)
+	}
 	if err != nil {
 		log.Printf("Error querying products: %v", err)
 		return nil, err
@@ -60,4 +71,36 @@ func (r *productRepo) GetAllProducts(ctx context.Context) ([]domain.Product, err
 	}
 
 	return products, nil
+}
+
+func (r *productRepo) UpdateProduct(ctx context.Context, id string, req domain.PatchProductRequest) error {
+	query := "UPDATE product_master SET "
+	var args []interface{}
+	var updates []string
+	argIdx := 1
+
+	if req.Name != nil {
+		updates = append(updates, fmt.Sprintf("c_nm = $%d", argIdx))
+		args = append(args, *req.Name)
+		argIdx++
+	}
+
+	if req.AmountSell != nil {
+		updates = append(updates, fmt.Sprintf("i_amt_sell = $%d", argIdx))
+		args = append(args, *req.AmountSell)
+		argIdx++
+	}
+
+	if len(updates) == 0 {
+		return nil // Nothing to update
+	}
+
+	query += strings.Join(updates, ", ")
+	query += fmt.Sprintf(" WHERE c_id = $%d", argIdx)
+	args = append(args, id)
+
+	log.Printf("Executing update: %s with args: %v", query, args)
+
+	_, err := r.db.ExecContext(ctx, query, args...)
+	return err
 }

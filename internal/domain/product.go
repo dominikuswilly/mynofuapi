@@ -15,6 +15,12 @@ type ProductResponse struct {
 	Data   []Product `json:"data"`
 }
 
+type PatchProductRequest struct {
+	Name       *string `json:"name"`
+	AmountSell *int    `json:"amount_sell"`
+}
+
 type ProductRepository interface {
-	GetAllProducts(ctx context.Context) ([]Product, error)
+	GetAllProducts(ctx context.Context, category string) ([]Product, error)
+	UpdateProduct(ctx context.Context, id string, req PatchProductRequest) error
 }

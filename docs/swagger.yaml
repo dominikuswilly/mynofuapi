@@ -51,6 +51,13 @@ definitions:
       status:
         type: string
     type: object
+  domain.PatchProductRequest:
+    properties:
+      amount_sell:
+        type: integer
+      name:
+        type: string
+    type: object
   domain.Product:
     properties:
       active:
@@ -205,6 +212,11 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all products from the product_master table
+      parameters:
+      - description: Category
+        in: query
+        name: category
+        type: string
       produces:
       - application/json
       responses:
@@ -219,6 +231,45 @@ paths:
       security:
       - Bearer: []
       summary: Get all products
+      tags:
+      - products
+  /private/product/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update product name and/or amount_sell
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PatchProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Update a product
       tags:
       - products
   /private/transaction/sales:
