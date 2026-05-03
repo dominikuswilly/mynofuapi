@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"mynofuapi/internal/domain"
 
@@ -11,22 +12,24 @@ import (
 )
 
 type userRepo struct {
-	db *sql.DB
+	db        *sql.DB
+	tableName string
 }
 
-func NewUserRepository(db *sql.DB) domain.UserRepository {
+func NewUserRepository(db *sql.DB, tableName string) domain.UserRepository {
 	return &userRepo{
-		db: db,
+		db:        db,
+		tableName: tableName,
 	}
 }
 
 func (r *userRepo) FindByUsername(ctx context.Context, username string) (domain.User, error) {
-	log.Printf("Searching for user: %s", username)
-	query := `
+	log.Printf("Searching for user: %s in %s", username, r.tableName)
+	query := fmt.Sprintf(`
 		SELECT i_id, c_username, c_password, c_nm, i_active 
-		FROM rider_master 
+		FROM %s 
 		WHERE c_username = $1 AND i_active = 1
-	`
+	`, r.tableName)
 
 	var user domain.User
 	err := r.db.QueryRowContext(ctx, query, username).Scan(
@@ -50,12 +53,12 @@ func (r *userRepo) FindByUsername(ctx context.Context, username string) (domain.
 }
 
 func (r *userRepo) FindByID(ctx context.Context, id string) (domain.User, error) {
-	log.Printf("Searching for user by ID: %s", id)
-	query := `
+	log.Printf("Searching for user by ID: %s in %s", id, r.tableName)
+	query := fmt.Sprintf(`
 		SELECT i_id, c_username, c_password, c_nm, i_active 
-		FROM rider_master 
+		FROM %s 
 		WHERE i_id = $1 AND i_active = 1
-	`
+	`, r.tableName)
 
 	var user domain.User
 	err := r.db.QueryRowContext(ctx, query, id).Scan(

@@ -42,12 +42,22 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 		return []byte("secret"), nil
 	})
 
-	// If access token is valid, return it back (or wrap in response)
+	// If access token is valid, return nil for AccessToken (meaning no refresh happened)
 	if err == nil && token.Valid {
+		claims, ok := token.Claims.(jwt.MapClaims)
+		userID := ""
+		name := ""
+		if ok {
+			userID, _ = claims["sub"].(string)
+			name, _ = claims["name"].(string)
+		}
+
 		return domain.AuthResponse{
-			AccessToken: accessToken,
+			UserID:      userID,
+			Name:        name,
+			AccessToken: nil,
 			TokenType:   "Bearer",
-			ExpiresIn:   3600, // Ideally we calculate remaining time
+			ExpiresIn:   3600,
 		}, nil
 	}
 
@@ -86,7 +96,7 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 
 func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, error) {
 	// Access Token generation
-	expiresIn := 3600
+	expiresIn := 3600 // Short for testing/demo as seen in user diff
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 
 	claims := jwt.MapClaims{
@@ -124,8 +134,10 @@ func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, err
 	}
 
 	return domain.AuthResponse{
-		AccessToken:      accessToken,
-		RefreshToken:     refreshToken,
+		UserID:           user.ID,
+		Name:             user.Name,
+		AccessToken:      &accessToken,
+		RefreshToken:     &refreshToken,
 		TokenType:        "Bearer",
 		ExpiresIn:        expiresIn,
 		RefreshExpiresIn: refreshExpiresIn,

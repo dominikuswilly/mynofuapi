@@ -1,0 +1,289 @@
+basePath: /
+definitions:
+  domain.AuthRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  domain.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      name:
+        type: string
+      refresh_expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  domain.Category:
+    properties:
+      icon_url:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  domain.CategoryResponse:
+    properties:
+      access_token:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.Category'
+        type: array
+      status:
+        type: string
+    type: object
+  domain.Product:
+    properties:
+      active:
+        type: integer
+      amount_sell:
+        type: integer
+      category:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  domain.ProductResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Product'
+        type: array
+      status:
+        type: string
+    type: object
+  domain.RiderInventory:
+    properties:
+      amount_sell:
+        type: string
+      product_id:
+        type: string
+      product_name:
+        type: string
+      qty_base:
+        type: integer
+      qty_current:
+        type: integer
+    type: object
+  domain.RiderInventoryResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.RiderInventory'
+        type: array
+      status:
+        type: string
+    type: object
+  domain.SaleItem:
+    properties:
+      amt_sell:
+        type: integer
+      product_id:
+        type: string
+      product_name:
+        type: string
+      qty_sell:
+        type: integer
+    type: object
+  domain.SaleRequest:
+    properties:
+      amt_pay_total:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/domain.SaleItem'
+        type: array
+      payment_method:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for MyNofu application.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: MyNofu API
+  version: "1.0"
+paths:
+  /private/introspect:
+    get:
+      consumes:
+      - application/json
+      description: Check token validity and return user info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Introspect token
+      tags:
+      - auth
+  /private/inventories/{category}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of inventories for the authenticated rider by category
+      parameters:
+      - description: Category
+        in: path
+        name: category
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.RiderInventoryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Get rider inventories
+      tags:
+      - inventory
+  /private/inventory/categories:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all inventory categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CategoryResponse'
+      security:
+      - Bearer: []
+      summary: Get inventory categories
+      tags:
+      - inventory
+  /private/product:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all products from the product_master table
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProductResponse'
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Get all products
+      tags:
+      - products
+  /private/transaction/sales:
+    post:
+      consumes:
+      - application/json
+      description: Create a new sale transaction for the authenticated rider
+      parameters:
+      - description: Sale request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SaleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Error message
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Create a sale
+      tags:
+      - transaction
+  /public/auth:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return access token
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Login
+      tags:
+      - auth
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
