@@ -21,8 +21,15 @@ type PatchProductRequest struct {
 	Active     *int    `json:"active"`
 }
 
+type CreateProductRequest struct {
+	Name       string `json:"name"`
+	Category   string `json:"category"`
+	AmountSell int    `json:"amount_sell"`
+}
+
 type ProductRepository interface {
 	GetAllProducts(ctx context.Context, category string, includeInactive bool) ([]Product, error)
 	UpdateProduct(ctx context.Context, id string, req PatchProductRequest) error
 	DeleteProduct(ctx context.Context, id string) error
+	CreateProduct(ctx context.Context, req CreateProductRequest) error
 }

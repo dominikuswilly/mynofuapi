@@ -171,3 +171,36 @@ func (h *ProductHandler) PatchAdminProduct(w http.ResponseWriter, r *http.Reques
 func (h *ProductHandler) DeleteAdminProduct(w http.ResponseWriter, r *http.Request) {
 	h.DeleteProduct(w, r)
 }
+
+// AddAdminProduct godoc
+// @Summary      Add a new product
+// @Description  Create a new product in the product_master table
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        request  body      domain.CreateProductRequest  true  "Create request"
+// @Success      200      {object}  map[string]string "{"status": "success"}"
+// @Failure      400      {string}  string "Invalid request body"
+// @Failure      500      {string}  string "Database error"
+// @Router       /private/admin/product [post]
+func (h *ProductHandler) AddAdminProduct(w http.ResponseWriter, r *http.Request) {
+	var req domain.CreateProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.repo.CreateProduct(r.Context(), req)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status": "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

@@ -119,3 +119,26 @@ func (r *productRepo) DeleteProduct(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
+
+func (r *productRepo) CreateProduct(ctx context.Context, req domain.CreateProductRequest) error {
+	id := generateProductID(req.Name)
+	query := `
+		INSERT INTO product_master (c_id, c_nm, c_category, i_amt_sell, i_active)
+		VALUES ($1, $2, $3, $4, 1)
+	`
+	log.Printf("Creating product with ID: %s, Name: %s", id, req.Name)
+	_, err := r.db.ExecContext(ctx, query, id, req.Name, req.Category, req.AmountSell)
+	return err
+}
+
+func generateProductID(name string) string {
+	// Remove spaces and convert to uppercase
+	id := strings.ReplaceAll(name, " ", "")
+	id = strings.ToUpper(id)
+
+	// Max length 15
+	if len(id) > 15 {
+		id = id[:15]
+	}
+	return id
+}
