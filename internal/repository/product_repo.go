@@ -127,7 +127,7 @@ func (r *productRepo) CreateProduct(ctx context.Context, req domain.CreateProduc
 		VALUES ($1, $2, $3, $4, 1)
 	`
 	log.Printf("Creating product with ID: %s, Name: %s", id, req.Name)
-	_, err := r.db.ExecContext(ctx, query, id, req.Name, req.Category, req.AmountSell)
+	_, err := r.db.ExecContext(ctx, query, id, strings.ToUpper(req.Name), req.Category, req.AmountSell)
 	return err
 }
 
