@@ -65,6 +65,7 @@ func main() {
 	inventoryHandler := delivery.NewInventoryHandler(inventoryRepo)
 	transactionHandler := delivery.NewTransactionHandler(transactionRepo)
 	productHandler := delivery.NewProductHandler(productRepo)
+	riderHandler := delivery.NewRiderHandler(riderRepo)
 
 	// Router setup
 	r := chi.NewRouter()
@@ -100,6 +101,7 @@ func main() {
 		r.Route("/admin", func(r chi.Router) {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
 			r.Get("/introspect", adminAuthHandler.Introspect)
+			r.Get("/rider", riderHandler.GetRiders)
 			r.Get("/product", productHandler.GetAdminProducts)
 			r.Post("/product", productHandler.AddAdminProduct)
 			r.Patch("/product/{id}", productHandler.PatchAdminProduct)

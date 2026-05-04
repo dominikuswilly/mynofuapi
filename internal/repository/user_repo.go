@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"mynofuapi/internal/domain"
+	"mynofuapi/pkg/utils"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -79,4 +81,44 @@ func (r *userRepo) FindByID(ctx context.Context, id string) (domain.User, error)
 	}
 
 	return user, nil
+}
+
+func (r *userRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
+	query := `
+		SELECT i_id, c_nm, c_username, ts_created_at, i_active, c_whatsapp_no 
+		FROM rider_master
+		ORDER BY i_id
+	`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		log.Printf("Error querying all riders: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var riders []domain.Rider
+	for rows.Next() {
+		var rider domain.Rider
+		var createdAt time.Time
+		err := rows.Scan(
+			&rider.ID,
+			&rider.Name,
+			&rider.Username,
+			&createdAt,
+			&rider.Active,
+			&rider.WhatsappNumber,
+		)
+		if err != nil {
+			log.Printf("Error scanning rider row: %v", err)
+			continue
+		}
+		rider.CreatedAt = utils.FormatTime(createdAt)
+		riders = append(riders, rider)
+	}
+
+	if riders == nil {
+		riders = []domain.Rider{}
+	}
+
+	return riders, nil
 }

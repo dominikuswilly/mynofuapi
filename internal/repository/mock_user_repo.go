@@ -40,3 +40,7 @@ func (m *mockUserRepo) FindByID(ctx context.Context, id string) (domain.User, er
 	}
 	return domain.User{}, errors.New("user not found")
 }
+
+func (m *mockUserRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
+	return []domain.Rider{}, nil
+}

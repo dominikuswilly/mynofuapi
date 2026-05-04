@@ -25,6 +25,7 @@ type AuthUseCase interface {
 type UserRepository interface {
 	FindByUsername(ctx context.Context, username string) (User, error)
 	FindByID(ctx context.Context, id string) (User, error)
+	GetAllRiders(ctx context.Context) ([]Rider, error)
 }
 
 type User struct {
