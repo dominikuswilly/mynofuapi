@@ -102,6 +102,7 @@ func main() {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
 			r.Get("/introspect", adminAuthHandler.Introspect)
 			r.Get("/rider", riderHandler.GetRiders)
+			r.Post("/rider", riderHandler.CreateRider)
 			r.Get("/product", productHandler.GetAdminProducts)
 			r.Post("/product", productHandler.AddAdminProduct)
 			r.Patch("/product/{id}", productHandler.PatchAdminProduct)

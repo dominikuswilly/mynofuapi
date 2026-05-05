@@ -7,37 +7,51 @@ import (
 )
 
 type RiderHandler struct {
-	repo domain.UserRepository
+	userRepo domain.UserRepository
 }
 
-func NewRiderHandler(repo domain.UserRepository) *RiderHandler {
+func NewRiderHandler(userRepo domain.UserRepository) *RiderHandler {
 	return &RiderHandler{
-		repo: repo,
+		userRepo: userRepo,
 	}
 }
 
-// GetRiders godoc
-// @Summary      Get all riders
-// @Description  Retrieve a list of all riders from the rider_master table
-// @Tags         riders
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Success      200  {object}  domain.RiderResponse
-// @Failure      500  {string}  string "Database error"
-// @Router       /private/rider [get]
-func (h *RiderHandler) GetRiders(w http.ResponseWriter, r *http.Request) {
-	riders, err := h.repo.GetAllRiders(r.Context())
-	if err != nil {
-		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+func (h *RiderHandler) CreateRider(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name           string `json:"name"`
+		Username       string `json:"username"`
+		WhatsappNumber string `json:"whatsapp_number"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	response := domain.RiderResponse{
-		Status: "success",
-		Data:   riders,
+	rider := domain.Rider{
+		Name:           req.Name,
+		Username:       req.Username,
+		WhatsappNumber: req.WhatsappNumber,
+	}
+
+	err := h.userRepo.CreateRider(r.Context(), rider)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
+func (h *RiderHandler) GetRiders(w http.ResponseWriter, r *http.Request) {
+	riders, err := h.userRepo.GetAllRiders(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(riders)
 }

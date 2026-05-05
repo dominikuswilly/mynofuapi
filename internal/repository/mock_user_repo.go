@@ -44,3 +44,8 @@ func (m *mockUserRepo) FindByID(ctx context.Context, id string) (domain.User, er
 func (m *mockUserRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
 	return []domain.Rider{}, nil
 }
+
+func (m *mockUserRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
+	return nil
+}
+

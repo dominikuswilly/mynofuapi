@@ -122,3 +122,15 @@ func (r *userRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
 
 	return riders, nil
 }
+func (r *userRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
+	query := `
+		INSERT INTO rider_master (c_nm, c_username, c_whatsapp_no, i_active, ts_created_at)
+		VALUES ($1, $2, $3, 1, NOW())
+	`
+	_, err := r.db.ExecContext(ctx, query, rider.Name, rider.Username, rider.WhatsappNumber)
+	if err != nil {
+		log.Printf("Error creating rider: %v", err)
+		return err
+	}
+	return nil
+}
