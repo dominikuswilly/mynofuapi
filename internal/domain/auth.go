@@ -40,9 +40,11 @@ type Rider struct {
 
 
 type User struct {
-	ID       string
-	Username string
-	Password string // Hashed
-	Name     string
-	IsActive int
+	ID             string
+	Username       string
+	Password       string // Hashed
+	Name           string
+	IsActive       int
+	ChangePassword int
+	WhatsappNumber string
 }

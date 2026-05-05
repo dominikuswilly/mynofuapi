@@ -8,12 +8,12 @@ import (
 )
 
 type RiderHandler struct {
-	userRepo domain.UserRepository
+	riderRepo domain.UserRepository
 }
 
-func NewRiderHandler(userRepo domain.UserRepository) *RiderHandler {
+func NewRiderHandler(riderRepo domain.UserRepository) *RiderHandler {
 	return &RiderHandler{
-		userRepo: userRepo,
+		riderRepo: riderRepo,
 	}
 }
 
@@ -35,7 +35,7 @@ func (h *RiderHandler) CreateRider(w http.ResponseWriter, r *http.Request) {
 		WhatsappNumber: req.WhatsappNumber,
 	}
 
-	err := h.userRepo.CreateRider(r.Context(), rider)
+	err := h.riderRepo.CreateRider(r.Context(), rider)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -52,7 +52,7 @@ func (h *RiderHandler) CreateRider(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RiderHandler) GetRiders(w http.ResponseWriter, r *http.Request) {
-	riders, err := h.userRepo.GetAllRiders(r.Context())
+	riders, err := h.riderRepo.GetAllRiders(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

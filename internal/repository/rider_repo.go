@@ -14,24 +14,24 @@ import (
 	"github.com/lib/pq"
 )
 
-type userRepo struct {
+type riderRepo struct {
 	db        *sql.DB
 	tableName string
 }
 
-func NewUserRepository(db *sql.DB, tableName string) domain.UserRepository {
-	return &userRepo{
+func NewRiderRepository(db *sql.DB, tableName string) domain.UserRepository {
+	return &riderRepo{
 		db:        db,
 		tableName: tableName,
 	}
 }
 
-func (r *userRepo) FindByUsername(ctx context.Context, username string) (domain.User, error) {
-	log.Printf("Searching for user: %s in %s", username, r.tableName)
+func (r *riderRepo) FindByUsername(ctx context.Context, username string) (domain.User, error) {
+	log.Printf("Searching for rider: %s in %s", username, r.tableName)
 	query := fmt.Sprintf(`
-		SELECT i_id, c_username, c_password, c_nm, i_active 
+		SELECT i_id, c_username, c_password, c_nm, i_active, i_change_password, c_whatsapp_no
 		FROM %s 
-		WHERE c_username = $1 AND i_active = 1
+		WHERE c_username = $1
 	`, r.tableName)
 
 	var user domain.User
@@ -41,11 +41,13 @@ func (r *userRepo) FindByUsername(ctx context.Context, username string) (domain.
 		&user.Password,
 		&user.Name,
 		&user.IsActive,
+		&user.ChangePassword,
+		&user.WhatsappNumber,
 	)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Printf("User not found: %s", username)
+			log.Printf("Rider not found: %s", username)
 			return domain.User{}, errors.New("user not found")
 		}
 		log.Printf("Database error during Scan: %v", err)
@@ -55,12 +57,12 @@ func (r *userRepo) FindByUsername(ctx context.Context, username string) (domain.
 	return user, nil
 }
 
-func (r *userRepo) FindByID(ctx context.Context, id string) (domain.User, error) {
-	log.Printf("Searching for user by ID: %s in %s", id, r.tableName)
+func (r *riderRepo) FindByID(ctx context.Context, id string) (domain.User, error) {
+	log.Printf("Searching for rider by ID: %s in %s", id, r.tableName)
 	query := fmt.Sprintf(`
-		SELECT i_id, c_username, c_password, c_nm, i_active 
+		SELECT i_id, c_username, c_password, c_nm, i_active, i_change_password, c_whatsapp_no
 		FROM %s 
-		WHERE i_id = $1 AND i_active = 1
+		WHERE i_id = $1
 	`, r.tableName)
 
 	var user domain.User
@@ -70,11 +72,13 @@ func (r *userRepo) FindByID(ctx context.Context, id string) (domain.User, error)
 		&user.Password,
 		&user.Name,
 		&user.IsActive,
+		&user.ChangePassword,
+		&user.WhatsappNumber,
 	)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Printf("User not found by ID: %s", id)
+			log.Printf("Rider not found by ID: %s", id)
 			return domain.User{}, errors.New("user not found")
 		}
 		log.Printf("Database error during Scan by ID: %v", err)
@@ -84,7 +88,7 @@ func (r *userRepo) FindByID(ctx context.Context, id string) (domain.User, error)
 	return user, nil
 }
 
-func (r *userRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
+func (r *riderRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
 	query := `
 		SELECT i_id, c_nm, c_username, ts_created_at, i_active, c_whatsapp_no 
 		FROM rider_master
@@ -123,7 +127,8 @@ func (r *userRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
 
 	return riders, nil
 }
-func (r *userRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
+
+func (r *riderRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
 	query := `
 		INSERT INTO rider_master (c_nm, c_username, c_whatsapp_no, c_password, i_change_password, i_active, ts_created_at, c_created_by)
 		VALUES ($1, $2, $3, $4, 1, 1, NOW(), 'SYSTEM')
@@ -144,6 +149,3 @@ func (r *userRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
 	}
 	return nil
 }
-
-
-

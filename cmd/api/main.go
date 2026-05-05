@@ -50,9 +50,10 @@ func main() {
 	}
 
 	// Initialize Dependencies
-	riderRepo := repository.NewUserRepository(db, "rider_master")
-	adminRepo := repository.NewUserRepository(db, "admin_master")
+	riderRepo := repository.NewRiderRepository(db, "rider_master")
+	adminRepo := repository.NewAdminRepository(db, "admin_master")
 	inventoryRepo := repository.NewInventoryRepository(db)
+
 	transactionRepo := repository.NewTransactionRepository(db)
 	productRepo := repository.NewProductRepository(db)
 
