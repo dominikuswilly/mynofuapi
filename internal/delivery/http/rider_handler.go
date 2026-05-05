@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"mynofuapi/internal/domain"
 	"net/http"
+	"strings"
 )
 
 type RiderHandler struct {
@@ -36,9 +37,14 @@ func (h *RiderHandler) CreateRider(w http.ResponseWriter, r *http.Request) {
 
 	err := h.userRepo.CreateRider(r.Context(), rider)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

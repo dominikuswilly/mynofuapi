@@ -8,9 +8,10 @@ import (
 	"log"
 	"mynofuapi/internal/domain"
 	"mynofuapi/pkg/utils"
+	"strings"
 	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 type userRepo struct {
@@ -124,13 +125,25 @@ func (r *userRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
 }
 func (r *userRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
 	query := `
-		INSERT INTO rider_master (c_nm, c_username, c_whatsapp_no, i_active, ts_created_at)
-		VALUES ($1, $2, $3, 1, NOW())
+		INSERT INTO rider_master (c_nm, c_username, c_whatsapp_no, c_password, i_change_password, i_active, ts_created_at, c_created_by)
+		VALUES ($1, $2, $3, $4, 1, 1, NOW(), 'SYSTEM')
 	`
-	_, err := r.db.ExecContext(ctx, query, rider.Name, rider.Username, rider.WhatsappNumber)
+	_, err := r.db.ExecContext(ctx, query, rider.Name, rider.Username, rider.WhatsappNumber, "nofuoke")
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			if strings.Contains(pqErr.Detail, "c_username") || strings.Contains(pqErr.Detail, "username") {
+				return errors.New("username already exists")
+			}
+			if strings.Contains(pqErr.Detail, "c_whatsapp_no") || strings.Contains(pqErr.Detail, "whatsapp") {
+				return errors.New("whatsapp number already exists")
+			}
+			return errors.New("rider with this username or whatsapp number already exists")
+		}
 		log.Printf("Error creating rider: %v", err)
 		return err
 	}
 	return nil
 }
+
+
+
