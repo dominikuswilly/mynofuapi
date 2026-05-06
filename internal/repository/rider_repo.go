@@ -164,3 +164,18 @@ func (r *riderRepo) UpdatePassword(ctx context.Context, id string, newPassword s
 	return nil
 }
 
+func (r *riderRepo) UpdateRiderStatus(ctx context.Context, id string, active int) error {
+	query := `
+		UPDATE rider_master 
+		SET i_active = $1 
+		WHERE i_id = $2
+	`
+	_, err := r.db.ExecContext(ctx, query, active, id)
+	if err != nil {
+		log.Printf("Error updating rider status: %v", err)
+		return err
+	}
+	return nil
+}
+
+

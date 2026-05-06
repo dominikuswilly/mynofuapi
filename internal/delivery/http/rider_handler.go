@@ -5,6 +5,8 @@ import (
 	"mynofuapi/internal/domain"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type RiderHandler struct {
@@ -93,4 +95,41 @@ func (h *RiderHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "password updated successfully"})
 }
+
+func (h *RiderHandler) UpdateRiderStatus(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "Rider ID is required", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Status string `json:"status"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	active := 0
+	if req.Status == "active" {
+		active = 1
+	} else if req.Status == "inactive" {
+		active = 0
+	} else {
+		http.Error(w, "Invalid status. Use 'active' or 'inactive'", http.StatusBadRequest)
+		return
+	}
+
+	err := h.riderRepo.UpdateRiderStatus(r.Context(), id, active)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
 

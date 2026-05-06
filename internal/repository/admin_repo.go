@@ -98,3 +98,8 @@ func (r *adminRepo) UpdatePassword(ctx context.Context, id string, newPassword s
 	return errors.New("method not allowed for admin repository")
 }
 
+func (r *adminRepo) UpdateRiderStatus(ctx context.Context, id string, active int) error {
+	return errors.New("method not allowed for admin repository")
+}
+
+

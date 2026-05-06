@@ -106,6 +106,8 @@ func main() {
 			r.Get("/introspect", adminAuthHandler.Introspect)
 			r.Get("/rider", riderHandler.GetRiders)
 			r.Post("/rider", riderHandler.CreateRider)
+			r.Patch("/rider/{id}", riderHandler.UpdateRiderStatus)
+
 			r.Get("/product", productHandler.GetAdminProducts)
 			r.Post("/product", productHandler.AddAdminProduct)
 			r.Patch("/product/{id}", productHandler.PatchAdminProduct)
