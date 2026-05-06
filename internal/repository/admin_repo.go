@@ -93,3 +93,8 @@ func (r *adminRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
 func (r *adminRepo) CreateRider(ctx context.Context, rider domain.Rider) error {
 	return errors.New("method not allowed for admin repository")
 }
+
+func (r *adminRepo) UpdatePassword(ctx context.Context, id string, newPassword string) error {
+	return errors.New("method not allowed for admin repository")
+}
+

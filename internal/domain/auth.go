@@ -27,6 +27,7 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id string) (User, error)
 	GetAllRiders(ctx context.Context) ([]Rider, error)
 	CreateRider(ctx context.Context, rider Rider) error
+	UpdatePassword(ctx context.Context, id string, newPassword string) error
 }
 
 type Rider struct {
