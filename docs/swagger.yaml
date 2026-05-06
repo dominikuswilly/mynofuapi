@@ -51,6 +51,15 @@ definitions:
       status:
         type: string
     type: object
+  domain.PatchProductRequest:
+    properties:
+      active:
+        type: integer
+      amount_sell:
+        type: integer
+      name:
+        type: string
+    type: object
   domain.Product:
     properties:
       active:
@@ -131,6 +140,99 @@ info:
   title: MyNofu API
   version: "1.0"
 paths:
+  /private/admin/product:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all products (Admin)
+      parameters:
+      - description: Category
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProductResponse'
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Get all products (Admin)
+      tags:
+      - admin-products
+  /private/admin/product/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft delete a product by setting i_active to 0 (Admin)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Delete a product (Admin)
+      tags:
+      - admin-products
+    patch:
+      consumes:
+      - application/json
+      description: Update product name and/or amount_sell (Admin)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PatchProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Update a product (Admin)
+      tags:
+      - admin-products
   /private/introspect:
     get:
       consumes:
@@ -205,6 +307,11 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all products from the product_master table
+      parameters:
+      - description: Category
+        in: query
+        name: category
+        type: string
       produces:
       - application/json
       responses:
@@ -219,6 +326,73 @@ paths:
       security:
       - Bearer: []
       summary: Get all products
+      tags:
+      - products
+  /private/product/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft delete a product by setting i_active to 0
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Delete a product
+      tags:
+      - products
+    patch:
+      consumes:
+      - application/json
+      description: Update product name and/or amount_sell
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PatchProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"status": "success"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Update a product
       tags:
       - products
   /private/transaction/sales:

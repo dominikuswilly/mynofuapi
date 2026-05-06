@@ -25,12 +25,28 @@ type AuthUseCase interface {
 type UserRepository interface {
 	FindByUsername(ctx context.Context, username string) (User, error)
 	FindByID(ctx context.Context, id string) (User, error)
+	GetAllRiders(ctx context.Context) ([]Rider, error)
+	CreateRider(ctx context.Context, rider Rider) error
+	UpdatePassword(ctx context.Context, id string, newPassword string) error
+	UpdateRiderStatus(ctx context.Context, id string, active int) error
 }
 
+type Rider struct {
+	ID             int    `json:"id"`
+	Name           string `json:"name"`
+	Username       string `json:"username"`
+	WhatsappNumber string `json:"whatsapp_number"`
+	Active         int    `json:"active"`
+	CreatedAt      string `json:"created_at"`
+}
+
+
 type User struct {
-	ID       string
-	Username string
-	Password string // Hashed
-	Name     string
-	IsActive int
+	ID             string
+	Username       string
+	Password       string // Hashed
+	Name           string
+	IsActive       int
+	ChangePassword int
+	WhatsappNumber string
 }

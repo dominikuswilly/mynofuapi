@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"mynofuapi/internal/domain"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type ProductHandler struct {
@@ -23,11 +25,14 @@ func NewProductHandler(repo domain.ProductRepository) *ProductHandler {
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
+// @Param        category  query     string  false  "Category"
 // @Success      200  {object}  domain.ProductResponse
 // @Failure      500  {string}  string "Database error"
 // @Router       /private/product [get]
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
-	products, err := h.repo.GetAllProducts(r.Context())
+	category := r.URL.Query().Get("category")
+
+	products, err := h.repo.GetAllProducts(r.Context(), category, false)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -36,6 +41,164 @@ func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	response := domain.ProductResponse{
 		Status: "success",
 		Data:   products,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// PatchProduct godoc
+// @Summary      Update a product
+// @Description  Update product name and/or amount_sell
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id       path      string                      true  "Product ID"
+// @Param        request  body      domain.PatchProductRequest  true  "Update request"
+// @Success      200      {object}  map[string]string "{"status": "success"}"
+// @Failure      400      {string}  string "Invalid request body"
+// @Failure      500      {string}  string "Database error"
+// @Router       /private/product/{id} [patch]
+func (h *ProductHandler) PatchProduct(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req domain.PatchProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.repo.UpdateProduct(r.Context(), id, req)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status": "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// DeleteProduct godoc
+// @Summary      Delete a product
+// @Description  Soft delete a product by setting i_active to 0
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id   path      string  true  "Product ID"
+// @Success      200  {object}  map[string]string "{"status": "success"}"
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/product/{id} [delete]
+func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	err := h.repo.DeleteProduct(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status": "success",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetAdminProducts godoc
+// @Summary      Get all products (Admin)
+// @Description  Retrieve a list of all products (Admin)
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        category  query     string  false  "Category"
+// @Success      200  {object}  domain.ProductResponse
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/admin/product [get]
+func (h *ProductHandler) GetAdminProducts(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+
+	products, err := h.repo.GetAllProducts(r.Context(), category, true) // Skip i_active filter
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := domain.ProductResponse{
+		Status: "success",
+		Data:   products,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// PatchAdminProduct godoc
+// @Summary      Update a product (Admin)
+// @Description  Update product name and/or amount_sell (Admin)
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id       path      string                      true  "Product ID"
+// @Param        request  body      domain.PatchProductRequest  true  "Update request"
+// @Success      200      {object}  map[string]string "{"status": "success"}"
+// @Failure      400      {string}  string "Invalid request body"
+// @Failure      500      {string}  string "Database error"
+// @Router       /private/admin/product/{id} [patch]
+func (h *ProductHandler) PatchAdminProduct(w http.ResponseWriter, r *http.Request) {
+	h.PatchProduct(w, r)
+}
+
+// DeleteAdminProduct godoc
+// @Summary      Delete a product (Admin)
+// @Description  Soft delete a product by setting i_active to 0 (Admin)
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id   path      string  true  "Product ID"
+// @Success      200  {object}  map[string]string "{"status": "success"}"
+// @Failure      500  {string}  string "Database error"
+// @Router       /private/admin/product/{id} [delete]
+func (h *ProductHandler) DeleteAdminProduct(w http.ResponseWriter, r *http.Request) {
+	h.DeleteProduct(w, r)
+}
+
+// AddAdminProduct godoc
+// @Summary      Add a new product
+// @Description  Create a new product in the product_master table
+// @Tags         admin-products
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        request  body      domain.CreateProductRequest  true  "Create request"
+// @Success      200      {object}  map[string]string "{"status": "success"}"
+// @Failure      400      {string}  string "Invalid request body"
+// @Failure      500      {string}  string "Database error"
+// @Router       /private/admin/product [post]
+func (h *ProductHandler) AddAdminProduct(w http.ResponseWriter, r *http.Request) {
+	var req domain.CreateProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.repo.CreateProduct(r.Context(), req)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status": "success",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

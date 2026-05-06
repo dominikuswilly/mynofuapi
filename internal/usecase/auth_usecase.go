@@ -10,17 +10,17 @@ import (
 )
 
 type authUseCase struct {
-	userRepo domain.UserRepository
+	riderRepo domain.UserRepository
 }
 
-func NewAuthUseCase(userRepo domain.UserRepository) domain.AuthUseCase {
+func NewAuthUseCase(riderRepo domain.UserRepository) domain.AuthUseCase {
 	return &authUseCase{
-		userRepo: userRepo,
+		riderRepo: riderRepo,
 	}
 }
 
 func (a *authUseCase) Authenticate(ctx context.Context, req domain.AuthRequest) (domain.AuthResponse, error) {
-	user, err := a.userRepo.FindByUsername(ctx, req.Username)
+	user, err := a.riderRepo.FindByUsername(ctx, req.Username)
 	if err != nil {
 		if err.Error() == "user not found" {
 			return domain.AuthResponse{}, errors.New("invalid credentials")
@@ -31,6 +31,10 @@ func (a *authUseCase) Authenticate(ctx context.Context, req domain.AuthRequest) 
 	// Simple password check (In a real app, use bcrypt)
 	if user.Password != req.Password {
 		return domain.AuthResponse{}, errors.New("invalid credentials")
+	}
+
+	if user.IsActive == 0 {
+		return domain.AuthResponse{}, errors.New("user is disabled or inactive")
 	}
 
 	return a.generateTokens(user)
@@ -85,9 +89,13 @@ func (a *authUseCase) Introspect(ctx context.Context, accessToken, refreshToken 
 	}
 
 	// Fetch user to get up-to-date claims
-	user, err := a.userRepo.FindByID(ctx, userID)
+	user, err := a.riderRepo.FindByID(ctx, userID)
 	if err != nil {
-		return domain.AuthResponse{}, errors.New("unauthorized: user no longer exists or is inactive")
+		return domain.AuthResponse{}, errors.New("unauthorized: user no longer exists")
+	}
+
+	if user.IsActive == 0 {
+		return domain.AuthResponse{}, errors.New("user is disabled or inactive")
 	}
 
 	// Generate new tokens
@@ -100,13 +108,15 @@ func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, err
 	expirationTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 
 	claims := jwt.MapClaims{
-		"sub":      user.ID,
-		"id":       user.ID,
-		"username": user.Username,
-		"name":     user.Name,
-		"exp":      expirationTime.Unix(),
-		"iat":      time.Now().Unix(),
-		"type":     "access",
+		"sub":             user.ID,
+		"id":              user.ID,
+		"username":        user.Username,
+		"name":            user.Name,
+		"change_password": user.ChangePassword,
+		"whatsapp_number": user.WhatsappNumber,
+		"exp":             expirationTime.Unix(),
+		"iat":             time.Now().Unix(),
+		"type":            "access",
 	}
 
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("secret"))
@@ -119,13 +129,15 @@ func (a *authUseCase) generateTokens(user domain.User) (domain.AuthResponse, err
 	refreshExpirationTime := time.Now().Add(time.Duration(refreshExpiresIn) * time.Second)
 
 	refreshClaims := jwt.MapClaims{
-		"sub":      user.ID,
-		"id":       user.ID,
-		"username": user.Username,
-		"name":     user.Name,
-		"exp":      refreshExpirationTime.Unix(),
-		"iat":      time.Now().Unix(),
-		"type":     "refresh",
+		"sub":             user.ID,
+		"id":              user.ID,
+		"username":        user.Username,
+		"name":            user.Name,
+		"change_password": user.ChangePassword,
+		"whatsapp_number": user.WhatsappNumber,
+		"exp":             refreshExpirationTime.Unix(),
+		"iat":             time.Now().Unix(),
+		"type":            "refresh",
 	}
 
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte("secret"))
