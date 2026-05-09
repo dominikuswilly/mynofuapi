@@ -97,3 +97,32 @@ func (h *InventoryHandler) GetCategories(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func (h *InventoryHandler) GetAllRiderInventories(w http.ResponseWriter, r *http.Request) {
+	// Get UserID and Token from context (stored by AuthMiddleware)
+	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "Unauthorized: missing user info", http.StatusUnauthorized)
+		return
+	}
+
+	riderID, err := strconv.Atoi(claims.UserID)
+	if err != nil {
+		http.Error(w, "Invalid user ID format", http.StatusInternalServerError)
+		return
+	}
+
+	inventories, err := h.repo.GetAllRiderInventory(r.Context(), riderID)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := domain.RiderInventoryResponse{
+		Status: "success",
+		Data:   inventories,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

@@ -93,6 +93,7 @@ func main() {
 				r.Get("/categories", inventoryHandler.GetCategories)
 			})
 
+			r.Get("/inventories", inventoryHandler.GetAllRiderInventories)
 			r.Get("/inventories/{category}", inventoryHandler.GetRiderInventories)
 
 			r.Route("/transaction", func(r chi.Router) {
