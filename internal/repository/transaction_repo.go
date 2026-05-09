@@ -64,10 +64,63 @@ func (r *transactionRepo) CreateSale(ctx context.Context, riderID int, creatorNa
 			log.Printf("Error updating inventory: %v", err)
 			return fmt.Errorf("failed to update inventory for product %s: %w", item.ProductID, err)
 		}
-		
+
 		rowsAffected, _ := result.RowsAffected()
 		if rowsAffected == 0 {
 			return fmt.Errorf("insufficient stock or product %s not found in inventory", item.ProductID)
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adminName string, req domain.StockInitiationRequest) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Process each item and insert into rider_inventory
+	for _, item := range req.Items {
+		// Fetch product details
+		var productNm, category string
+		var amtSell float64
+		productQuery := `
+			SELECT c_nm, c_category, i_amt_sell 
+			FROM product_master 
+			WHERE c_id = $1
+		`
+		err = tx.QueryRowContext(ctx, productQuery, item.ProductID).Scan(&productNm, &category, &amtSell)
+		if err != nil {
+			log.Printf("Error fetching product details for %s: %v", item.ProductID, err)
+			return fmt.Errorf("product %s not found: %w", item.ProductID, err)
+		}
+
+		// Insert into rider_inventory
+		inventoryQuery := `
+			INSERT INTO rider_inventory (
+				c_id, c_created_by, ts_created_at, c_product_id, 
+				i_qty_base, i_qty_current, i_rider_id, 
+				c_category, c_product_nm, i_amt_sell
+			)
+			VALUES (gen_random_uuid(), $1, NOW(), $2, $3, $4, $5, $6, $7, $8)
+		`
+		// Convert quantity to string (text) and riderID to int as per table schema
+		_, err = tx.ExecContext(ctx, inventoryQuery,
+			adminName,
+			item.ProductID,
+			fmt.Sprintf("%d", item.Quantity),
+			fmt.Sprintf("%d", item.Quantity),
+			req.RiderID,
+			category,
+			productNm,
+			amtSell,
+		)
+
+		if err != nil {
+			log.Printf("Error inserting into rider_inventory for %s: %v", item.ProductID, err)
+			return fmt.Errorf("failed to initiate stock for product %s: %w", item.ProductID, err)
 		}
 	}
 

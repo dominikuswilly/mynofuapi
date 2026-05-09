@@ -31,4 +31,5 @@ type RiderInventoryResponse struct {
 
 type InventoryRepository interface {
 	GetRiderInventory(ctx context.Context, riderID int, category string) ([]RiderInventory, error)
+	GetAllRiderInventory(ctx context.Context, riderID int) ([]RiderInventory, error)
 }

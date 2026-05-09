@@ -93,6 +93,7 @@ func main() {
 				r.Get("/categories", inventoryHandler.GetCategories)
 			})
 
+			r.Get("/inventories", inventoryHandler.GetAllRiderInventories)
 			r.Get("/inventories/{category}", inventoryHandler.GetRiderInventories)
 
 			r.Route("/transaction", func(r chi.Router) {
@@ -113,7 +114,13 @@ func main() {
 			r.Patch("/product/{id}", productHandler.PatchAdminProduct)
 			r.Delete("/product/{id}", productHandler.DeleteAdminProduct)
 		})
+
+		r.Route("/admin/transaction", func(r chi.Router) {
+			r.Use(delivery.AuthMiddleware(adminAuthUC))
+			r.Post("/stock/init", transactionHandler.InitiateStock)
+		})
 	})
+
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
