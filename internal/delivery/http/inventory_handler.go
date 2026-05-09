@@ -126,3 +126,32 @@ func (h *InventoryHandler) GetAllRiderInventories(w http.ResponseWriter, r *http
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func (h *InventoryHandler) CheckConfirmation(w http.ResponseWriter, r *http.Request) {
+	// Get UserID from context
+	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "Unauthorized: missing user info", http.StatusUnauthorized)
+		return
+	}
+
+	riderID, err := strconv.Atoi(claims.UserID)
+	if err != nil {
+		http.Error(w, "Invalid user ID format", http.StatusInternalServerError)
+		return
+	}
+
+	isConfirmed, err := h.repo.CheckInventoryConfirmation(r.Context(), riderID)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := domain.InventoryConfirmationResponse{
+		Status:      "success",
+		IsConfirmed: isConfirmed,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

@@ -91,6 +91,7 @@ func main() {
 
 			r.Route("/inventory", func(r chi.Router) {
 				r.Get("/categories", inventoryHandler.GetCategories)
+				r.Get("/check-confirmation", inventoryHandler.CheckConfirmation)
 			})
 
 			r.Get("/inventories", inventoryHandler.GetAllRiderInventories)

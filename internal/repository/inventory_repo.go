@@ -38,7 +38,7 @@ func (r *inventoryRepo) GetRiderInventory(ctx context.Context, riderID int, cate
 	var inventories []domain.RiderInventory
 	for rows.Next() {
 		var inv domain.RiderInventory
-		
+
 		var amt float64
 		err := rows.Scan(
 			&inv.ProductID,
@@ -95,4 +95,23 @@ func (r *inventoryRepo) GetAllRiderInventory(ctx context.Context, riderID int) (
 	}
 
 	return inventories, nil
+}
+
+func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID int) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM rider_inventory 
+			WHERE i_rider_id = $1 
+			AND ts_created_at::date = CURRENT_DATE
+			AND ts_confirmed_at IS NOT NULL
+			AND c_confirmed_by IS NOT NULL
+		)
+	`
+	var confirmed bool
+	err := r.db.QueryRowContext(ctx, query, riderID).Scan(&confirmed)
+	if err != nil {
+		log.Printf("Error checking inventory confirmation: %v", err)
+		return false, err
+	}
+	return confirmed, nil
 }

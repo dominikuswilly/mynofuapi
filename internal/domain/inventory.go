@@ -29,7 +29,13 @@ type RiderInventoryResponse struct {
 	Data   []RiderInventory `json:"data"`
 }
 
+type InventoryConfirmationResponse struct {
+	Status      string `json:"status"`
+	IsConfirmed bool   `json:"is_confirmed"`
+}
+
 type InventoryRepository interface {
 	GetRiderInventory(ctx context.Context, riderID int, category string) ([]RiderInventory, error)
 	GetAllRiderInventory(ctx context.Context, riderID int) ([]RiderInventory, error)
+	CheckInventoryConfirmation(ctx context.Context, riderID int) (bool, error)
 }
