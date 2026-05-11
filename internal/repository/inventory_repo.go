@@ -124,7 +124,9 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 			WHERE i_rider_id = $1 
 			AND ts_created_at::date = CURRENT_DATE
 			AND (ts_confirmed_at IS NULL OR i_confirmed = 0)
+			ORDER BY c_product_nm ASC
 		`
+
 
 		rows, err := r.db.QueryContext(ctx, itemsQuery, riderID)
 		if err != nil {
