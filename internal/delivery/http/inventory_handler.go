@@ -141,7 +141,7 @@ func (h *InventoryHandler) CheckConfirmation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	isConfirmed, err := h.repo.CheckInventoryConfirmation(r.Context(), riderID)
+	isConfirmed, items, err := h.repo.CheckInventoryConfirmation(r.Context(), riderID)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -150,8 +150,10 @@ func (h *InventoryHandler) CheckConfirmation(w http.ResponseWriter, r *http.Requ
 	response := domain.InventoryConfirmationResponse{
 		Status:      "success",
 		IsConfirmed: isConfirmed,
+		Items:       items,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
