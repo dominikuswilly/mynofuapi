@@ -157,3 +157,43 @@ func (h *InventoryHandler) CheckConfirmation(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(response)
 }
 
+func (h *InventoryHandler) ConfirmInventory(w http.ResponseWriter, r *http.Request) {
+	// Get UserID from context
+	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "Unauthorized: missing user info", http.StatusUnauthorized)
+		return
+	}
+
+	riderID, err := strconv.Atoi(claims.UserID)
+	if err != nil {
+		http.Error(w, "Invalid user ID format", http.StatusInternalServerError)
+		return
+	}
+
+	var req struct {
+		ProductID string `json:"product_id"`
+		Status    string `json:"status"` // accepted or rejected
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.ProductID == "" || req.Status == "" {
+		http.Error(w, "product_id and status are required", http.StatusBadRequest)
+		return
+	}
+
+	err = h.repo.ConfirmInventory(r.Context(), riderID, req.ProductID, req.Status, claims.Name)
+	if err != nil {
+		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
+

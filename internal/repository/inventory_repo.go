@@ -100,13 +100,14 @@ func (r *inventoryRepo) GetAllRiderInventory(ctx context.Context, riderID int) (
 func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID int) (bool, []domain.RiderInventory, error) {
 	// 1. Check if any inventory is confirmed for today
 	checkQuery := `
-		SELECT EXISTS (
-			SELECT 1 FROM rider_inventory 
-			WHERE i_rider_id = $1 
-			AND ts_created_at::date = CURRENT_DATE
-			AND ts_confirmed_at IS NOT NULL
-		)
+		SELECT 
+			CASE 
+				WHEN NOT EXISTS (SELECT 1 FROM rider_inventory WHERE i_rider_id = $1 AND ts_created_at::date = CURRENT_DATE) THEN false
+				WHEN EXISTS (SELECT 1 FROM rider_inventory WHERE i_rider_id = $1 AND ts_created_at::date = CURRENT_DATE AND (ts_confirmed_at IS NULL OR i_confirmed = 0)) THEN false
+				ELSE true
+			END
 	`
+
 	var isConfirmed bool
 	err := r.db.QueryRowContext(ctx, checkQuery, riderID).Scan(&isConfirmed)
 	if err != nil {
@@ -122,8 +123,9 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 			FROM rider_inventory
 			WHERE i_rider_id = $1 
 			AND ts_created_at::date = CURRENT_DATE
-			AND ts_confirmed_at IS NULL
+			AND (ts_confirmed_at IS NULL OR i_confirmed = 0)
 		`
+
 		rows, err := r.db.QueryContext(ctx, itemsQuery, riderID)
 		if err != nil {
 			log.Printf("Error querying unconfirmed items: %v", err)
@@ -155,4 +157,31 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 
 	return isConfirmed, items, nil
 }
+
+func (r *inventoryRepo) ConfirmInventory(ctx context.Context, riderID int, productID string, status string, confirmedBy string) error {
+	confirmedFlag := 0
+	if status == "accepted" {
+		confirmedFlag = 1
+	}
+
+	query := `
+		UPDATE rider_inventory 
+		SET i_confirmed = $1,
+		    ts_confirmed_at = NOW(), 
+		    c_confirmed_by = $2,
+		    c_updated_by = $3,
+		    ts_updated_at = NOW()
+		WHERE i_rider_id = $4 
+		AND c_product_id = $5 
+		AND ts_created_at::date = CURRENT_DATE
+	`
+	_, err := r.db.ExecContext(ctx, query, confirmedFlag, confirmedBy, confirmedBy, riderID, productID)
+	if err != nil {
+		log.Printf("Error confirming inventory: %v", err)
+		return err
+	}
+	return nil
+}
+
+
 
