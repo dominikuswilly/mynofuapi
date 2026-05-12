@@ -164,6 +164,8 @@ func (r *inventoryRepo) ConfirmInventory(ctx context.Context, riderID int, produ
 	confirmedFlag := 0
 	if status == "accepted" {
 		confirmedFlag = 1
+	} else if status == "rejected" {
+		confirmedFlag = 2
 	}
 
 	query := `
