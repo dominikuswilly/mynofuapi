@@ -128,23 +128,24 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 }
 
 func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.RiderStockSummary, error) {
-
 	query := `
 		SELECT 
-			i_rider_id, 
-			c_product_id, 
-			c_product_nm, 
-			c_category, 
-			i_qty_base, 
-			i_qty_current, 
-			COALESCE(i_confirmed, 0), 
-			to_char(ts_confirmed_at, 'YYYY-MM-DD HH24:MI:SS'), 
-			c_confirmed_by, 
-			to_char(ts_created_at, 'YYYY-MM-DD HH24:MI:SS'), 
-			c_created_by
-		FROM rider_inventory
-		WHERE ts_created_at::date = CURRENT_DATE
-		ORDER BY i_rider_id, c_product_nm
+			inv.i_rider_id, 
+			rm.c_nm as rider_name,
+			inv.c_product_id, 
+			inv.c_product_nm, 
+			inv.c_category, 
+			inv.i_qty_base, 
+			inv.i_qty_current, 
+			COALESCE(inv.i_confirmed, 0), 
+			to_char(inv.ts_confirmed_at, 'YYYY-MM-DD HH24:MI:SS'), 
+			inv.c_confirmed_by, 
+			to_char(inv.ts_created_at, 'YYYY-MM-DD HH24:MI:SS'), 
+			inv.c_created_by
+		FROM rider_inventory inv
+		LEFT JOIN rider_master rm ON inv.i_rider_id = rm.i_id
+		WHERE inv.ts_created_at::date = CURRENT_DATE
+		ORDER BY inv.i_rider_id, inv.c_product_nm
 	`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -159,11 +160,13 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.Rid
 
 	for rows.Next() {
 		var riderID int
+		var riderName string
 		var item domain.RiderStockItem
 		var confirmedAt, confirmedBy, createdAt, createdBy sql.NullString
 
 		err := rows.Scan(
 			&riderID,
+			&riderName,
 			&item.ProductID,
 			&item.ProductName,
 			&item.ProductCategory,
@@ -199,6 +202,7 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.Rid
 		} else {
 			summary := &domain.RiderStockSummary{
 				RiderID:   riderID,
+				RiderName: riderName,
 				StockList: []domain.RiderStockItem{item},
 			}
 			summaryMap[riderID] = summary
@@ -213,4 +217,5 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.Rid
 
 	return result, nil
 }
+
 

@@ -27,8 +27,10 @@ type StockInitiationRequest struct {
 
 type RiderStockSummary struct {
 	RiderID   int              `json:"rider_id"`
+	RiderName string           `json:"rider_name"`
 	StockList []RiderStockItem `json:"stock_list"`
 }
+
 
 type RiderStockItem struct {
 	ProductID       string  `json:"product_id"`
