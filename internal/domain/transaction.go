@@ -56,8 +56,9 @@ type AdminStockResponse struct {
 type TransactionRepository interface {
 	CreateSale(ctx context.Context, riderID int, creatorName string, req SaleRequest) error
 	InitiateStock(ctx context.Context, adminID string, adminName string, req StockInitiationRequest) error
-	GetAdminStockReport(ctx context.Context, riderName string, dateStart string, dateEnd string) ([]RiderStockSummary, error)
+	GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string) ([]RiderStockSummary, error)
 }
+
 
 
 
