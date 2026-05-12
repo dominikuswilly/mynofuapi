@@ -25,8 +25,36 @@ type StockInitiationRequest struct {
 	Items   []StockInitiationItem `json:"items"`
 }
 
+type RiderStockSummary struct {
+	RiderID   int              `json:"rider_id"`
+	StockList []RiderStockItem `json:"stock_list"`
+}
+
+type RiderStockItem struct {
+	ProductID       string  `json:"product_id"`
+	ProductName     string  `json:"product_name"`
+	ProductCategory string  `json:"product_category"`
+	QtyBase         int     `json:"qty_base"`
+	QtyCurrent      int     `json:"qty_current"`
+	Confirmed       int     `json:"confirmed"`
+	ConfirmedAt     *string `json:"confirmed_at"`
+	ConfirmedBy     *string `json:"confirmed_by"`
+	Closed          int     `json:"closed"`
+	ClosedAt        *string `json:"closed_at"`
+	ClosedBy        *string `json:"closed_by"`
+	CreatedAt       string  `json:"created_at"`
+	CreatedBy       string  `json:"created_by"`
+}
+
+type AdminStockResponse struct {
+	Status string              `json:"status"`
+	Data   []RiderStockSummary `json:"data"`
+}
+
 type TransactionRepository interface {
 	CreateSale(ctx context.Context, riderID int, creatorName string, req SaleRequest) error
 	InitiateStock(ctx context.Context, adminID string, adminName string, req StockInitiationRequest) error
+	GetAdminStockReport(ctx context.Context) ([]RiderStockSummary, error)
 }
+
 

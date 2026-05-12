@@ -83,3 +83,20 @@ func (h *TransactionHandler) InitiateStock(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
 
+func (h *TransactionHandler) GetAdminStockReport(w http.ResponseWriter, r *http.Request) {
+	report, err := h.repo.GetAdminStockReport(r.Context())
+	if err != nil {
+		http.Error(w, "Error generating report: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := domain.AdminStockResponse{
+		Status: "success",
+		Data:   report,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+

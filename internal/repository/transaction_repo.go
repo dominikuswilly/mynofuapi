@@ -126,3 +126,91 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 
 	return tx.Commit()
 }
+
+func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.RiderStockSummary, error) {
+
+	query := `
+		SELECT 
+			i_rider_id, 
+			c_product_id, 
+			c_product_nm, 
+			c_category, 
+			i_qty_base, 
+			i_qty_current, 
+			COALESCE(i_confirmed, 0), 
+			to_char(ts_confirmed_at, 'YYYY-MM-DD HH24:MI:SS'), 
+			c_confirmed_by, 
+			to_char(ts_created_at, 'YYYY-MM-DD HH24:MI:SS'), 
+			c_created_by
+		FROM rider_inventory
+		WHERE ts_created_at::date = CURRENT_DATE
+		ORDER BY i_rider_id, c_product_nm
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		log.Printf("Error querying admin stock report: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	summaryMap := make(map[int]*domain.RiderStockSummary)
+	var riderIDs []int
+
+	for rows.Next() {
+		var riderID int
+		var item domain.RiderStockItem
+		var confirmedAt, confirmedBy, createdAt, createdBy sql.NullString
+
+		err := rows.Scan(
+			&riderID,
+			&item.ProductID,
+			&item.ProductName,
+			&item.ProductCategory,
+			&item.QtyBase,
+			&item.QtyCurrent,
+			&item.Confirmed,
+			&confirmedAt,
+			&confirmedBy,
+			&createdAt,
+			&createdBy,
+		)
+		if err != nil {
+			log.Printf("Error scanning stock report row: %v", err)
+			continue
+		}
+
+		if confirmedAt.Valid {
+			item.ConfirmedAt = &confirmedAt.String
+		}
+		if confirmedBy.Valid {
+			item.ConfirmedBy = &confirmedBy.String
+		}
+		item.CreatedAt = createdAt.String
+		item.CreatedBy = createdBy.String
+
+		// Default values for closed (not yet in DB)
+		item.Closed = 0
+		item.ClosedAt = nil
+		item.ClosedBy = nil
+
+		if summary, ok := summaryMap[riderID]; ok {
+			summary.StockList = append(summary.StockList, item)
+		} else {
+			summary := &domain.RiderStockSummary{
+				RiderID:   riderID,
+				StockList: []domain.RiderStockItem{item},
+			}
+			summaryMap[riderID] = summary
+			riderIDs = append(riderIDs, riderID)
+		}
+	}
+
+	result := make([]domain.RiderStockSummary, 0, len(riderIDs))
+	for _, id := range riderIDs {
+		result = append(result, *summaryMap[id])
+	}
+
+	return result, nil
+}
+

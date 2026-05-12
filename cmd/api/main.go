@@ -120,8 +120,11 @@ func main() {
 
 		r.Route("/admin/transaction", func(r chi.Router) {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
+			r.Get("/stock", transactionHandler.GetAdminStockReport)
 			r.Post("/stock/init", transactionHandler.InitiateStock)
 		})
+
+
 	})
 
 
