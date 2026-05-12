@@ -138,15 +138,16 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.Rid
 			inv.i_qty_base, 
 			inv.i_qty_current, 
 			COALESCE(inv.i_confirmed, 0), 
-			to_char(inv.ts_confirmed_at, 'YYYY-MM-DD HH24:MI:SS'), 
+			to_char(inv.ts_confirmed_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'), 
 			inv.c_confirmed_by, 
-			to_char(inv.ts_created_at, 'YYYY-MM-DD HH24:MI:SS'), 
+			to_char(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'), 
 			inv.c_created_by
 		FROM rider_inventory inv
 		LEFT JOIN rider_master rm ON inv.i_rider_id = rm.i_id
-		WHERE inv.ts_created_at::date = CURRENT_DATE
+		WHERE (inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
 		ORDER BY inv.i_rider_id, inv.c_product_nm
 	`
+
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
