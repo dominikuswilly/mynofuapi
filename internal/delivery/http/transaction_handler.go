@@ -85,11 +85,15 @@ func (h *TransactionHandler) InitiateStock(w http.ResponseWriter, r *http.Reques
 
 func (h *TransactionHandler) GetAdminStockReport(w http.ResponseWriter, r *http.Request) {
 	riderName := r.URL.Query().Get("rider_name")
-	report, err := h.repo.GetAdminStockReport(r.Context(), riderName)
+	dateStart := r.URL.Query().Get("date_start")
+	dateEnd := r.URL.Query().Get("date_end")
+
+	report, err := h.repo.GetAdminStockReport(r.Context(), riderName, dateStart, dateEnd)
 	if err != nil {
 		http.Error(w, "Error generating report: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 
 
 	response := domain.AdminStockResponse{

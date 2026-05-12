@@ -127,8 +127,35 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 	return tx.Commit()
 }
 
-func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderName string) ([]domain.RiderStockSummary, error) {
-	query := `
+func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderName string, dateStart string, dateEnd string) ([]domain.RiderStockSummary, error) {
+	whereClause := "(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date"
+	var params []interface{}
+	paramCount := 0
+
+	if dateStart != "" && dateEnd != "" {
+		paramCount++
+		whereClause = fmt.Sprintf("(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date BETWEEN $%d", paramCount)
+		params = append(params, dateStart)
+		paramCount++
+		whereClause += fmt.Sprintf(" AND $%d", paramCount)
+		params = append(params, dateEnd)
+	} else if dateStart != "" {
+		paramCount++
+		whereClause = fmt.Sprintf("(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date >= $%d", paramCount)
+		params = append(params, dateStart)
+	} else if dateEnd != "" {
+		paramCount++
+		whereClause = fmt.Sprintf("(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date <= $%d", paramCount)
+		params = append(params, dateEnd)
+	}
+
+	if riderName != "" {
+		paramCount++
+		whereClause += fmt.Sprintf(" AND rm.c_nm ILIKE $%d", paramCount)
+		params = append(params, "%"+riderName+"%")
+	}
+
+	query := fmt.Sprintf(`
 		SELECT 
 			inv.i_rider_id, 
 			rm.c_nm as rider_name,
@@ -144,16 +171,9 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderName str
 			inv.c_created_by
 		FROM rider_inventory inv
 		LEFT JOIN rider_master rm ON inv.i_rider_id = rm.i_id
-		WHERE (inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
-	`
-
-	var params []interface{}
-	if riderName != "" {
-		query += " AND rm.c_nm ILIKE $1"
-		params = append(params, "%"+riderName+"%")
-	}
-
-	query += " ORDER BY inv.i_rider_id, inv.c_product_nm"
+		WHERE %s
+		ORDER BY inv.i_rider_id, inv.c_product_nm
+	`, whereClause)
 
 	rows, err := r.db.QueryContext(ctx, query, params...)
 	if err != nil {
@@ -161,6 +181,7 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderName str
 		return nil, err
 	}
 	defer rows.Close()
+
 
 	summaryMap := make(map[int]*domain.RiderStockSummary)
 	var riderIDs []int
