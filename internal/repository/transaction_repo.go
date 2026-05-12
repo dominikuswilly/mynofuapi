@@ -127,7 +127,7 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 	return tx.Commit()
 }
 
-func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.RiderStockSummary, error) {
+func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderName string) ([]domain.RiderStockSummary, error) {
 	query := `
 		SELECT 
 			inv.i_rider_id, 
@@ -145,11 +145,17 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context) ([]domain.Rid
 		FROM rider_inventory inv
 		LEFT JOIN rider_master rm ON inv.i_rider_id = rm.i_id
 		WHERE (inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
-		ORDER BY inv.i_rider_id, inv.c_product_nm
 	`
 
+	var params []interface{}
+	if riderName != "" {
+		query += " AND rm.c_nm ILIKE $1"
+		params = append(params, "%"+riderName+"%")
+	}
 
-	rows, err := r.db.QueryContext(ctx, query)
+	query += " ORDER BY inv.i_rider_id, inv.c_product_nm"
+
+	rows, err := r.db.QueryContext(ctx, query, params...)
 	if err != nil {
 		log.Printf("Error querying admin stock report: %v", err)
 		return nil, err
