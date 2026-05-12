@@ -162,9 +162,10 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 
 func (r *inventoryRepo) ConfirmInventory(ctx context.Context, riderID int, productID string, status string, confirmedBy string) error {
 	confirmedFlag := 0
-	if status == "accepted" {
+	switch status {
+	case "accepted":
 		confirmedFlag = 1
-	} else if status == "rejected" {
+	case "rejected":
 		confirmedFlag = 2
 	}
 
