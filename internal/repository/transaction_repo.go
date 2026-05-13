@@ -126,3 +126,131 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 
 	return tx.Commit()
 }
+
+func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string) ([]domain.RiderStockSummary, error) {
+	whereClause := "(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date"
+	var params []interface{}
+	paramCount := 0
+
+	if dateStart != "" && dateEnd != "" {
+		paramCount++
+		whereClause = fmt.Sprintf("(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date BETWEEN $%d", paramCount)
+		params = append(params, dateStart)
+		paramCount++
+		whereClause += fmt.Sprintf(" AND $%d", paramCount)
+		params = append(params, dateEnd)
+	} else if dateStart != "" {
+		paramCount++
+		whereClause = fmt.Sprintf("(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date >= $%d", paramCount)
+		params = append(params, dateStart)
+	} else if dateEnd != "" {
+		paramCount++
+		whereClause = fmt.Sprintf("(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date <= $%d", paramCount)
+		params = append(params, dateEnd)
+	}
+
+	if riderID != "" {
+		paramCount++
+		whereClause += fmt.Sprintf(" AND inv.i_rider_id = $%d", paramCount)
+		params = append(params, riderID)
+	}
+
+	if riderName != "" {
+		paramCount++
+		whereClause += fmt.Sprintf(" AND rm.c_nm ILIKE $%d", paramCount)
+		params = append(params, "%"+riderName+"%")
+	}
+
+
+	query := fmt.Sprintf(`
+		SELECT 
+			inv.i_rider_id, 
+			rm.c_nm as rider_name,
+			inv.c_product_id, 
+			inv.c_product_nm, 
+			inv.c_category, 
+			inv.i_qty_base, 
+			inv.i_qty_current, 
+			COALESCE(inv.i_confirmed, 0), 
+			to_char(inv.ts_confirmed_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'), 
+			inv.c_confirmed_by, 
+			to_char(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'), 
+			inv.c_created_by
+		FROM rider_inventory inv
+		LEFT JOIN rider_master rm ON inv.i_rider_id = rm.i_id
+		WHERE %s
+		ORDER BY inv.i_rider_id, inv.c_product_nm
+	`, whereClause)
+
+	rows, err := r.db.QueryContext(ctx, query, params...)
+	if err != nil {
+		log.Printf("Error querying admin stock report: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+
+	summaryMap := make(map[int]*domain.RiderStockSummary)
+	var riderIDs []int
+
+	for rows.Next() {
+		var riderID int
+		var riderName string
+		var item domain.RiderStockItem
+		var confirmedAt, confirmedBy, createdAt, createdBy sql.NullString
+
+		err := rows.Scan(
+			&riderID,
+			&riderName,
+			&item.ProductID,
+			&item.ProductName,
+			&item.ProductCategory,
+			&item.QtyBase,
+			&item.QtyCurrent,
+			&item.Confirmed,
+			&confirmedAt,
+			&confirmedBy,
+			&createdAt,
+			&createdBy,
+		)
+		if err != nil {
+			log.Printf("Error scanning stock report row: %v", err)
+			continue
+		}
+
+		if confirmedAt.Valid {
+			item.ConfirmedAt = &confirmedAt.String
+		}
+		if confirmedBy.Valid {
+			item.ConfirmedBy = &confirmedBy.String
+		}
+		item.CreatedAt = createdAt.String
+		item.CreatedBy = createdBy.String
+
+		// Default values for closed (not yet in DB)
+		item.Closed = 0
+		item.ClosedAt = nil
+		item.ClosedBy = nil
+
+		if summary, ok := summaryMap[riderID]; ok {
+			summary.StockList = append(summary.StockList, item)
+		} else {
+			summary := &domain.RiderStockSummary{
+				RiderID:   riderID,
+				RiderName: riderName,
+				StockList: []domain.RiderStockItem{item},
+			}
+			summaryMap[riderID] = summary
+			riderIDs = append(riderIDs, riderID)
+		}
+	}
+
+	result := make([]domain.RiderStockSummary, 0, len(riderIDs))
+	for _, id := range riderIDs {
+		result = append(result, *summaryMap[id])
+	}
+
+	return result, nil
+}
+
+

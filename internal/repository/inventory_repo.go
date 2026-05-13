@@ -23,7 +23,7 @@ func (r *inventoryRepo) GetRiderInventory(ctx context.Context, riderID int, cate
 		SELECT c_product_id, c_product_nm, i_qty_base, i_qty_current, i_amt_sell
 		FROM rider_inventory
 		WHERE i_rider_id = $1 AND LOWER(c_category) = LOWER($2)
-		AND ts_created_at::date = CURRENT_DATE
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
 		ORDER BY c_product_nm ASC
 	`
 	log.Printf("Executing query: %s with params: [%d, %s]", query, riderID, category)
@@ -63,7 +63,7 @@ func (r *inventoryRepo) GetAllRiderInventory(ctx context.Context, riderID int) (
 		SELECT c_product_id, c_product_nm, i_qty_base, i_qty_current, i_amt_sell
 		FROM rider_inventory
 		WHERE i_rider_id = $1
-		AND ts_created_at::date = CURRENT_DATE
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
 		ORDER BY c_product_nm ASC
 	`
 	log.Printf("Executing query: %s with params: [%d]", query, riderID)
@@ -102,8 +102,8 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 	checkQuery := `
 		SELECT 
 			CASE 
-				WHEN NOT EXISTS (SELECT 1 FROM rider_inventory WHERE i_rider_id = $1 AND ts_created_at::date = CURRENT_DATE) THEN false
-				WHEN EXISTS (SELECT 1 FROM rider_inventory WHERE i_rider_id = $1 AND ts_created_at::date = CURRENT_DATE AND (ts_confirmed_at IS NULL OR i_confirmed = 0)) THEN false
+				WHEN NOT EXISTS (SELECT 1 FROM rider_inventory WHERE i_rider_id = $1 AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date) THEN false
+				WHEN EXISTS (SELECT 1 FROM rider_inventory WHERE i_rider_id = $1 AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date AND (ts_confirmed_at IS NULL OR i_confirmed = 0)) THEN false
 				ELSE true
 			END
 	`
@@ -122,7 +122,7 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 			SELECT c_product_id, c_product_nm, i_qty_base, i_qty_current, i_amt_sell
 			FROM rider_inventory
 			WHERE i_rider_id = $1 
-			AND ts_created_at::date = CURRENT_DATE
+			AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
 			AND (ts_confirmed_at IS NULL OR i_confirmed = 0)
 			ORDER BY c_product_nm ASC
 		`
@@ -162,9 +162,10 @@ func (r *inventoryRepo) CheckInventoryConfirmation(ctx context.Context, riderID 
 
 func (r *inventoryRepo) ConfirmInventory(ctx context.Context, riderID int, productID string, status string, confirmedBy string) error {
 	confirmedFlag := 0
-	if status == "accepted" {
+	switch status {
+	case "accepted":
 		confirmedFlag = 1
-	} else if status == "rejected" {
+	case "rejected":
 		confirmedFlag = 2
 	}
 
@@ -177,7 +178,7 @@ func (r *inventoryRepo) ConfirmInventory(ctx context.Context, riderID int, produ
 		    ts_updated_at = NOW()
 		WHERE i_rider_id = $4 
 		AND c_product_id = $5 
-		AND ts_created_at::date = CURRENT_DATE
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
 	`
 	_, err := r.db.ExecContext(ctx, query, confirmedFlag, confirmedBy, confirmedBy, riderID, productID)
 	if err != nil {

@@ -178,4 +178,57 @@ func (r *riderRepo) UpdateRiderStatus(ctx context.Context, id string, active int
 	return nil
 }
 
+func (r *riderRepo) GetAllRidersWithStockStatus(ctx context.Context) ([]domain.Rider, error) {
 
+	query := `
+		SELECT 
+			r.i_id, 
+			r.c_nm, 
+			r.c_username, 
+			r.ts_created_at, 
+			r.i_active, 
+			r.c_whatsapp_no,
+			NOT EXISTS (
+				SELECT 1 FROM rider_inventory inv
+				WHERE inv.i_rider_id = r.i_id
+				AND (inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
+				AND ((inv.ts_confirmed_at IS NULL OR inv.i_confirmed = 0)
+				OR (inv.i_closed = 0))
+			) as can_init
+		FROM rider_master r
+		ORDER BY r.i_id
+	`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		log.Printf("Error querying all riders with stock status: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var riders []domain.Rider
+	for rows.Next() {
+		var rider domain.Rider
+		var createdAt time.Time
+		err := rows.Scan(
+			&rider.ID,
+			&rider.Name,
+			&rider.Username,
+			&createdAt,
+			&rider.Active,
+			&rider.WhatsappNumber,
+			&rider.CanInit,
+		)
+		if err != nil {
+			log.Printf("Error scanning rider row: %v", err)
+			continue
+		}
+		rider.CreatedAt = utils.FormatTime(createdAt)
+		riders = append(riders, rider)
+	}
+
+	if riders == nil {
+		riders = []domain.Rider{}
+	}
+
+	return riders, nil
+}

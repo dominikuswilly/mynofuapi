@@ -109,6 +109,8 @@ func main() {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
 			r.Get("/introspect", adminAuthHandler.Introspect)
 			r.Get("/rider", riderHandler.GetRiders)
+			r.Get("/rider/init-status", riderHandler.GetRidersWithStockStatus)
+
 			r.Post("/rider", riderHandler.CreateRider)
 			r.Patch("/rider/{id}", riderHandler.UpdateRiderStatus)
 
@@ -120,8 +122,11 @@ func main() {
 
 		r.Route("/admin/transaction", func(r chi.Router) {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
+			r.Get("/stock", transactionHandler.GetAdminStockReport)
 			r.Post("/stock/init", transactionHandler.InitiateStock)
 		})
+
+
 	})
 
 
