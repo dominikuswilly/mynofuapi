@@ -102,4 +102,9 @@ func (r *adminRepo) UpdateRiderStatus(ctx context.Context, id string, active int
 	return errors.New("method not allowed for admin repository")
 }
 
+func (r *adminRepo) GetAllRidersWithStockStatus(ctx context.Context) ([]domain.Rider, error) {
+	return nil, errors.New("method not allowed for admin repository")
+}
+
+
 

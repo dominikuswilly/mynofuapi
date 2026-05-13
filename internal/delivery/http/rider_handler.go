@@ -64,6 +64,18 @@ func (h *RiderHandler) GetRiders(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(riders)
 }
 
+func (h *RiderHandler) GetRidersWithStockStatus(w http.ResponseWriter, r *http.Request) {
+	riders, err := h.riderRepo.GetAllRidersWithStockStatus(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(riders)
+}
+
+
 func (h *RiderHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		NewPassword string `json:"new_password"`

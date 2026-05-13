@@ -109,6 +109,8 @@ func main() {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
 			r.Get("/introspect", adminAuthHandler.Introspect)
 			r.Get("/rider", riderHandler.GetRiders)
+			r.Get("/rider/init-status", riderHandler.GetRidersWithStockStatus)
+
 			r.Post("/rider", riderHandler.CreateRider)
 			r.Patch("/rider/{id}", riderHandler.UpdateRiderStatus)
 

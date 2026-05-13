@@ -29,7 +29,9 @@ type UserRepository interface {
 	CreateRider(ctx context.Context, rider Rider) error
 	UpdatePassword(ctx context.Context, id string, newPassword string) error
 	UpdateRiderStatus(ctx context.Context, id string, active int) error
+	GetAllRidersWithStockStatus(ctx context.Context) ([]Rider, error)
 }
+
 
 type Rider struct {
 	ID             int    `json:"id"`
@@ -38,7 +40,9 @@ type Rider struct {
 	WhatsappNumber string `json:"whatsapp_number"`
 	Active         int    `json:"active"`
 	CreatedAt      string `json:"created_at"`
+	CanInit        bool   `json:"can_init"`
 }
+
 
 
 type User struct {
