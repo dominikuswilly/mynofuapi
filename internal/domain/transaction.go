@@ -26,10 +26,16 @@ type StockInitiationRequest struct {
 }
 
 type RiderStockSummary struct {
-	RiderID   int              `json:"rider_id"`
-	RiderName string           `json:"rider_name"`
-	StockList []RiderStockItem `json:"stock_list"`
+	RiderID   int                `json:"rider_id"`
+	RiderName string             `json:"rider_name"`
+	StockList []RiderStockByDate `json:"stock_list"`
 }
+
+type RiderStockByDate struct {
+	CreatedAt string           `json:"created_at"`
+	ItemList  []RiderStockItem `json:"item_list"`
+}
+
 
 
 type RiderStockItem struct {
@@ -44,8 +50,9 @@ type RiderStockItem struct {
 	Closed          int     `json:"closed"`
 	ClosedAt        *string `json:"closed_at"`
 	ClosedBy        *string `json:"closed_by"`
-	CreatedAt       string  `json:"created_at"`
+	CreatedAt       string  `json:"-"`
 	CreatedBy       string  `json:"created_by"`
+	Status          string  `json:"status"`
 }
 
 type AdminStockResponse struct {
