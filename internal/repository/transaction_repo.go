@@ -127,7 +127,7 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 	return tx.Commit()
 }
 
-func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string) ([]domain.RiderStockSummary, error) {
+func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string, status string) ([]domain.RiderStockSummary, error) {
 	whereClause := "(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date"
 	var params []interface{}
 	paramCount := 0
@@ -161,11 +161,16 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 		params = append(params, "%"+riderName+"%")
 	}
 
+	if status != "" {
+		paramCount++
+		whereClause += fmt.Sprintf(" AND inv.c_status ILIKE $%d", paramCount)
+		params = append(params, status)
+	}
 
 	query := fmt.Sprintf(`
 		SELECT 
 			inv.i_rider_id, 
-			rm.c_nm as rider_name,
+			COALESCE(rm.c_nm, '') as rider_name,
 			inv.c_product_id, 
 			inv.c_product_nm, 
 			inv.c_category, 
@@ -175,11 +180,13 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 			to_char(inv.ts_confirmed_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'), 
 			inv.c_confirmed_by, 
 			to_char(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI:SS'), 
-			inv.c_created_by
+			inv.c_created_by,
+			to_char(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') as created_date,
+			COALESCE(inv.c_status, '')
 		FROM rider_inventory inv
 		LEFT JOIN rider_master rm ON inv.i_rider_id = rm.i_id
 		WHERE %s
-		ORDER BY inv.i_rider_id, inv.c_product_nm
+		ORDER BY inv.i_rider_id, (inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date DESC, inv.c_product_nm
 	`, whereClause)
 
 	rows, err := r.db.QueryContext(ctx, query, params...)
@@ -189,19 +196,19 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 	}
 	defer rows.Close()
 
-
 	summaryMap := make(map[int]*domain.RiderStockSummary)
 	var riderIDs []int
 
 	for rows.Next() {
-		var riderID int
-		var riderName string
+		var rID int
+		var rName string
 		var item domain.RiderStockItem
 		var confirmedAt, confirmedBy, createdAt, createdBy sql.NullString
+		var createdDate string
 
 		err := rows.Scan(
-			&riderID,
-			&riderName,
+			&rID,
+			&rName,
 			&item.ProductID,
 			&item.ProductName,
 			&item.ProductCategory,
@@ -212,7 +219,10 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 			&confirmedBy,
 			&createdAt,
 			&createdBy,
+			&createdDate,
+			&item.Status,
 		)
+
 		if err != nil {
 			log.Printf("Error scanning stock report row: %v", err)
 			continue
@@ -232,16 +242,26 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 		item.ClosedAt = nil
 		item.ClosedBy = nil
 
-		if summary, ok := summaryMap[riderID]; ok {
-			summary.StockList = append(summary.StockList, item)
-		} else {
-			summary := &domain.RiderStockSummary{
-				RiderID:   riderID,
-				RiderName: riderName,
-				StockList: []domain.RiderStockItem{item},
+		summary, ok := summaryMap[rID]
+		if !ok {
+			summary = &domain.RiderStockSummary{
+				RiderID:   rID,
+				RiderName: rName,
+				StockList: []domain.RiderStockByDate{},
 			}
-			summaryMap[riderID] = summary
-			riderIDs = append(riderIDs, riderID)
+			summaryMap[rID] = summary
+			riderIDs = append(riderIDs, rID)
+		}
+
+		// Group by date
+		if len(summary.StockList) == 0 || summary.StockList[len(summary.StockList)-1].CreatedAt != createdDate {
+			summary.StockList = append(summary.StockList, domain.RiderStockByDate{
+				CreatedAt: createdDate,
+				ItemList:  []domain.RiderStockItem{item},
+			})
+		} else {
+			lastIndex := len(summary.StockList) - 1
+			summary.StockList[lastIndex].ItemList = append(summary.StockList[lastIndex].ItemList, item)
 		}
 	}
 
@@ -252,5 +272,6 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 
 	return result, nil
 }
+
 
 

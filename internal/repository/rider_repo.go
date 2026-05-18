@@ -88,12 +88,18 @@ func (r *riderRepo) FindByID(ctx context.Context, id string) (domain.User, error
 	return user, nil
 }
 
-func (r *riderRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
+func (r *riderRepo) GetAllRiders(ctx context.Context, active string) ([]domain.Rider, error) {
 	query := `
 		SELECT i_id, c_nm, c_username, ts_created_at, i_active, c_whatsapp_no 
 		FROM rider_master
-		ORDER BY i_id
 	`
+	if active == "true" {
+		query += " WHERE i_active = 1"
+	} else if active == "false" {
+		query += " WHERE i_active = 0"
+	}
+	query += " ORDER BY i_id"
+
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		log.Printf("Error querying all riders: %v", err)

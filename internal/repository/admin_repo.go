@@ -86,7 +86,7 @@ func (r *adminRepo) FindByID(ctx context.Context, id string) (domain.User, error
 	return user, nil
 }
 
-func (r *adminRepo) GetAllRiders(ctx context.Context) ([]domain.Rider, error) {
+func (r *adminRepo) GetAllRiders(ctx context.Context, active string) ([]domain.Rider, error) {
 	return nil, errors.New("method not allowed for admin repository")
 }
 
