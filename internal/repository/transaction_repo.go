@@ -127,7 +127,7 @@ func (r *transactionRepo) InitiateStock(ctx context.Context, adminID string, adm
 	return tx.Commit()
 }
 
-func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string) ([]domain.RiderStockSummary, error) {
+func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string, status string) ([]domain.RiderStockSummary, error) {
 	whereClause := "(inv.ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date"
 	var params []interface{}
 	paramCount := 0
@@ -159,6 +159,12 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 		paramCount++
 		whereClause += fmt.Sprintf(" AND rm.c_nm ILIKE $%d", paramCount)
 		params = append(params, "%"+riderName+"%")
+	}
+
+	if status != "" {
+		paramCount++
+		whereClause += fmt.Sprintf(" AND inv.c_status ILIKE $%d", paramCount)
+		params = append(params, status)
 	}
 
 	query := fmt.Sprintf(`

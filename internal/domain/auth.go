@@ -25,7 +25,7 @@ type AuthUseCase interface {
 type UserRepository interface {
 	FindByUsername(ctx context.Context, username string) (User, error)
 	FindByID(ctx context.Context, id string) (User, error)
-	GetAllRiders(ctx context.Context) ([]Rider, error)
+	GetAllRiders(ctx context.Context, active string) ([]Rider, error)
 	CreateRider(ctx context.Context, rider Rider) error
 	UpdatePassword(ctx context.Context, id string, newPassword string) error
 	UpdateRiderStatus(ctx context.Context, id string, active int) error

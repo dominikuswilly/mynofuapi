@@ -54,7 +54,8 @@ func (h *RiderHandler) CreateRider(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RiderHandler) GetRiders(w http.ResponseWriter, r *http.Request) {
-	riders, err := h.riderRepo.GetAllRiders(r.Context())
+	active := r.URL.Query().Get("active")
+	riders, err := h.riderRepo.GetAllRiders(r.Context(), active)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

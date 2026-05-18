@@ -88,8 +88,9 @@ func (h *TransactionHandler) GetAdminStockReport(w http.ResponseWriter, r *http.
 	riderName := r.URL.Query().Get("rider_name")
 	dateStart := r.URL.Query().Get("date_start")
 	dateEnd := r.URL.Query().Get("date_end")
+	status := r.URL.Query().Get("status")
 
-	report, err := h.repo.GetAdminStockReport(r.Context(), riderID, riderName, dateStart, dateEnd)
+	report, err := h.repo.GetAdminStockReport(r.Context(), riderID, riderName, dateStart, dateEnd, status)
 	if err != nil {
 		http.Error(w, "Error generating report: "+err.Error(), http.StatusInternalServerError)
 		return
