@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"log"
 	delivery "mynofuapi/internal/delivery/http"
 	"mynofuapi/internal/repository"
@@ -12,7 +12,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
+	sqldblogger "github.com/simukti/sqldb-logger"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -35,13 +36,22 @@ import (
 // @in header
 // @name Authorization
 
+type sqlLogger struct{}
+
+func (l *sqlLogger) Log(ctx context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
+	if msg == "QueryContext" || msg == "ExecContext" || msg == "Query" || msg == "Exec" || msg == "PrepareContext" {
+		if err, ok := data["error"]; ok && err != nil {
+			log.Printf("[SQL ERROR] %s | args: %v | duration: %v | error: %v", data["query"], data["args"], data["duration"], err)
+		} else {
+			log.Printf("[SQL] %s | args: %v | duration: %v", data["query"], data["args"], data["duration"])
+		}
+	}
+}
+
 func main() {
 	// Database connection string
 	connStr := "host=db.netbird.cloud port=5440 user=mynofu password=nofu2025 dbname=mynofudb sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := sqldblogger.OpenDriver(connStr, &pq.Driver{}, &sqlLogger{})
 	defer db.Close()
 
 	// Check connection
