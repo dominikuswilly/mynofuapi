@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"mynofuapi/internal/domain"
+	"strconv"
 )
 
 type transactionRepo struct {
@@ -271,6 +272,139 @@ func (r *transactionRepo) GetAdminStockReport(ctx context.Context, riderID strin
 	}
 
 	return result, nil
+}
+
+func (r *transactionRepo) CloseSession(ctx context.Context, req domain.CloseSessionRequest, adminName string) (float64, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	// 1. Check if session is already closed today
+	var closedCount int
+	checkClosedQuery := `
+		SELECT COUNT(*) 
+		FROM rider_inventory 
+		WHERE i_rider_id = $1 
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
+		AND i_closed = 1
+	`
+	err = tx.QueryRowContext(ctx, checkClosedQuery, req.RiderID).Scan(&closedCount)
+	if err != nil {
+		return 0, fmt.Errorf("failed to check session status: %w", err)
+	}
+	if closedCount > 0 {
+		return 0, fmt.Errorf("session for rider %d is already closed today", req.RiderID)
+	}
+
+	// 2. Fetch current stock levels to check physical discrepancies
+	stockQuery := `
+		SELECT c_product_id, c_product_nm, i_qty_current
+		FROM rider_inventory
+		WHERE i_rider_id = $1
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
+	`
+	rows, err := tx.QueryContext(ctx, stockQuery, req.RiderID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to query daily stock: %w", err)
+	}
+	defer rows.Close()
+
+	systemStocks := make(map[string]int)
+	productNames := make(map[string]string)
+	hasStock := false
+	for rows.Next() {
+		hasStock = true
+		var pID, pNm, qtyStr string
+		if err := rows.Scan(&pID, &pNm, &qtyStr); err == nil {
+			qty, _ := strconv.Atoi(qtyStr)
+			systemStocks[pID] = qty
+			productNames[pID] = pNm
+		}
+	}
+	rows.Close() // Explicit close since we are inside transaction
+
+	if !hasStock {
+		return 0, fmt.Errorf("no stock initiated for rider %d today", req.RiderID)
+	}
+
+	// 3. Log any discrepancies
+	for _, physicalItem := range req.ActualStocks {
+		systemQty, exists := systemStocks[physicalItem.ProductID]
+		pNm := productNames[physicalItem.ProductID]
+		if !exists {
+			log.Printf("[WARNING] Physical stock reported for non-allocated product %s", physicalItem.ProductID)
+			continue
+		}
+		if systemQty != physicalItem.PhysicalQty {
+			diff := physicalItem.PhysicalQty - systemQty
+			log.Printf("[DISCREPANCY] Rider %d | Product %s (%s) | System Qty: %d | Physical Qty: %d | Diff: %d",
+				req.RiderID, physicalItem.ProductID, pNm, systemQty, physicalItem.PhysicalQty, diff)
+		}
+	}
+
+	// 4. Update rider_inventory to close session
+	closeQuery := `
+		UPDATE rider_inventory
+		SET i_closed = 1,
+		    ts_closed_at = NOW(),
+		    c_closed_by = $1,
+		    c_status = 'closed',
+		    c_updated_by = $1,
+		    ts_updated_at = NOW()
+		WHERE i_rider_id = $2
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
+	`
+	_, err = tx.ExecContext(ctx, closeQuery, adminName, req.RiderID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to close rider inventory rows: %w", err)
+	}
+
+	// 5. Calculate total sales for today
+	var totalSales float64
+	salesQuery := `
+		SELECT COALESCE(SUM(i_amt_pay_total), 0)
+		FROM sales_master
+		WHERE i_rider_id = $1
+		AND (ts_created_at AT TIME ZONE 'Asia/Jakarta')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date
+	`
+	err = tx.QueryRowContext(ctx, salesQuery, req.RiderID).Scan(&totalSales)
+	if err != nil {
+		return 0, fmt.Errorf("failed to calculate total sales: %w", err)
+	}
+
+	// 6. Calculate commission (10%)
+	commissionAmt := totalSales * 0.10
+
+	// 7. Write to rider_commissions
+	insertCommissionQuery := `
+		INSERT INTO rider_commissions (
+			c_id, ts_created_at, c_created_by, ts_date, 
+			i_rider_id, i_amt_sales, i_amt_commission
+		)
+		VALUES (
+			gen_random_uuid(), NOW(), $1, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Jakarta')::date,
+			$2, $3, $4
+		)
+		ON CONFLICT (i_rider_id, ts_date) 
+		DO UPDATE SET 
+			i_amt_sales = EXCLUDED.i_amt_sales,
+			i_amt_commission = EXCLUDED.i_amt_commission,
+			c_created_by = EXCLUDED.c_created_by,
+			ts_created_at = NOW()
+	`
+	_, err = tx.ExecContext(ctx, insertCommissionQuery, adminName, req.RiderID, totalSales, commissionAmt)
+	if err != nil {
+		return 0, fmt.Errorf("failed to log rider commission: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return 0, err
+	}
+
+	return commissionAmt, nil
 }
 
 

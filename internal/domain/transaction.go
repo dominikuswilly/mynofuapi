@@ -60,10 +60,21 @@ type AdminStockResponse struct {
 	Data   []RiderStockSummary `json:"data"`
 }
 
+type ActualStockItem struct {
+	ProductID   string `json:"product_id"`
+	PhysicalQty int    `json:"physical_qty"`
+}
+
+type CloseSessionRequest struct {
+	RiderID      int               `json:"rider_id"`
+	ActualStocks []ActualStockItem `json:"actual_stocks"`
+}
+
 type TransactionRepository interface {
 	CreateSale(ctx context.Context, riderID int, creatorName string, req SaleRequest) error
 	InitiateStock(ctx context.Context, adminID string, adminName string, req StockInitiationRequest) error
 	GetAdminStockReport(ctx context.Context, riderID string, riderName string, dateStart string, dateEnd string, status string) ([]RiderStockSummary, error)
+	CloseSession(ctx context.Context, req CloseSessionRequest, adminName string) (float64, error)
 }
 
 

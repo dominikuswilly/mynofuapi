@@ -59,6 +59,11 @@ func main() {
 		log.Fatal("Could not connect to database:", err)
 	}
 
+	// Auto-initialize DB tables for Phase 1
+	if err := repository.InitDBTables(db); err != nil {
+		log.Fatal("Failed to initialize database tables:", err)
+	}
+
 	// Initialize Dependencies
 	riderRepo := repository.NewRiderRepository(db, "rider_master")
 	adminRepo := repository.NewAdminRepository(db, "admin_master")
@@ -66,6 +71,9 @@ func main() {
 
 	transactionRepo := repository.NewTransactionRepository(db)
 	productRepo := repository.NewProductRepository(db)
+	restockRepo := repository.NewRestockRepository(db)
+	wasteRepo := repository.NewWasteRepository(db)
+	commissionRepo := repository.NewCommissionRepository(db)
 
 	authUC := usecase.NewAuthUseCase(riderRepo)
 	adminAuthUC := usecase.NewAuthUseCase(adminRepo)
@@ -77,6 +85,9 @@ func main() {
 	transactionHandler := delivery.NewTransactionHandler(transactionRepo)
 	productHandler := delivery.NewProductHandler(productRepo)
 	riderHandler := delivery.NewRiderHandler(riderRepo)
+	restockHandler := delivery.NewRestockHandler(restockRepo)
+	wasteHandler := delivery.NewWasteHandler(wasteRepo)
+	commissionHandler := delivery.NewCommissionHandler(commissionRepo)
 
 	// Router setup
 	r := chi.NewRouter()
@@ -98,19 +109,24 @@ func main() {
 			r.Get("/product", productHandler.GetProducts)
 			r.Patch("/change-password", riderHandler.ChangePassword)
 
-
 			r.Route("/inventory", func(r chi.Router) {
 				r.Get("/categories", inventoryHandler.GetCategories)
 				r.Get("/check-confirmation", inventoryHandler.CheckConfirmation)
 				r.Post("/confirm", inventoryHandler.ConfirmInventory)
+				r.Post("/restock", restockHandler.CreateRequest) // Rider submits restock request
 			})
-
 
 			r.Get("/inventories", inventoryHandler.GetAllRiderInventories)
 			r.Get("/inventories/{category}", inventoryHandler.GetRiderInventories)
 
 			r.Route("/transaction", func(r chi.Router) {
 				r.Post("/sales", transactionHandler.CreateSale)
+				r.Post("/waste", wasteHandler.CreateReport) // Rider reports spilled/damaged stock
+			})
+
+			r.Route("/wallet", func(r chi.Router) {
+				r.Get("/summary", commissionHandler.GetWalletSummary) // Rider balance summary
+				r.Get("/history", commissionHandler.GetWalletHistory) // Rider balance history activity logs
 			})
 		})
 
@@ -128,15 +144,20 @@ func main() {
 			r.Post("/product", productHandler.AddAdminProduct)
 			r.Patch("/product/{id}", productHandler.PatchAdminProduct)
 			r.Delete("/product/{id}", productHandler.DeleteAdminProduct)
+
+			r.Get("/inventory/restock", restockHandler.ListRequests) // Admin lists restock requests
+			r.Post("/inventory/restock/{id}/approve", restockHandler.ApproveRequest) // Admin approves restock
+			r.Post("/inventory/restock/{id}/reject", restockHandler.RejectRequest) // Admin rejects restock
+
+			r.Get("/transaction/waste", wasteHandler.ListReports) // Admin lists waste/defect reports
 		})
 
 		r.Route("/admin/transaction", func(r chi.Router) {
 			r.Use(delivery.AuthMiddleware(adminAuthUC))
 			r.Get("/stock", transactionHandler.GetAdminStockReport)
 			r.Post("/stock/init", transactionHandler.InitiateStock)
+			r.Post("/close-session", transactionHandler.CloseSession) // Admin closes rider shift
 		})
-
-
 	})
 
 

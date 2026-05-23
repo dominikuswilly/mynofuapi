@@ -108,4 +108,36 @@ func (h *TransactionHandler) GetAdminStockReport(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(response)
 }
 
+func (h *TransactionHandler) CloseSession(w http.ResponseWriter, r *http.Request) {
+	// Get Admin info from context
+	claims, ok := r.Context().Value(ClaimsKey).(domain.AuthResponse)
+	if !ok || claims.UserID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req domain.CloseSessionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.RiderID == 0 {
+		http.Error(w, "rider_id is required", http.StatusBadRequest)
+		return
+	}
+
+	commissionAmt, err := h.repo.CloseSession(r.Context(), req, claims.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":         "success",
+		"commission_amt": commissionAmt,
+	})
+}
+
 
