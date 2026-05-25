@@ -40,7 +40,10 @@ func (r *commissionRepo) GetWalletSummary(ctx context.Context, riderID int) (dom
 func (r *commissionRepo) GetWalletHistory(ctx context.Context, riderID int) ([]domain.WalletActivity, error) {
 	var activities []domain.WalletActivity
 
-	loc, _ := time.LoadLocation("Asia/Jakarta")
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.FixedZone("WIB", 7*3600)
+	}
 	todayStr := time.Now().In(loc).Format("2006-01-02")
 	yesterdayStr := time.Now().In(loc).AddDate(0, 0, -1).Format("2006-01-02")
 
