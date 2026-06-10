@@ -50,7 +50,7 @@ func (l *sqlLogger) Log(ctx context.Context, level sqldblogger.Level, msg string
 
 func main() {
 	// Database connection string
-	connStr := "host=db.netbird.cloud port=5440 user=mynofu password=nofu2025 dbname=mynofudb sslmode=disable"
+	connStr := "host=asus.netbird.cloud port=5432 user=user password=pass dbname=mynofudb sslmode=disable"
 	db := sqldblogger.OpenDriver(connStr, &pq.Driver{}, &sqlLogger{})
 	defer db.Close()
 
@@ -145,9 +145,9 @@ func main() {
 			r.Patch("/product/{id}", productHandler.PatchAdminProduct)
 			r.Delete("/product/{id}", productHandler.DeleteAdminProduct)
 
-			r.Get("/inventory/restock", restockHandler.ListRequests) // Admin lists restock requests
+			r.Get("/inventory/restock", restockHandler.ListRequests)                 // Admin lists restock requests
 			r.Post("/inventory/restock/{id}/approve", restockHandler.ApproveRequest) // Admin approves restock
-			r.Post("/inventory/restock/{id}/reject", restockHandler.RejectRequest) // Admin rejects restock
+			r.Post("/inventory/restock/{id}/reject", restockHandler.RejectRequest)   // Admin rejects restock
 
 			r.Get("/transaction/waste", wasteHandler.ListReports) // Admin lists waste/defect reports
 		})
@@ -159,7 +159,6 @@ func main() {
 			r.Post("/close-session", transactionHandler.CloseSession) // Admin closes rider shift
 		})
 	})
-
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 

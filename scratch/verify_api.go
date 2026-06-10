@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -30,7 +28,7 @@ func main() {
 	time.Sleep(1 * time.Second)
 
 	// 1. Connect to DB to retrieve active Admin, Rider, and Product
-	connStr := "host=db.netbird.cloud port=5440 user=mynofu password=nofu2025 dbname=mynofudb sslmode=disable"
+	connStr := "host=asus.netbird.cloud port=5432 user=user password=pass dbname=mynofudb sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
